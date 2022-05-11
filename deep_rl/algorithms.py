@@ -1,9 +1,10 @@
 import os
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model, clone_model
 from tqdm import tqdm
 from deep_rl.replaybuffers import ExperienceReplay
+
 
 class DriverAlgorithm:
     # Base class for a training algorithm
@@ -73,9 +74,14 @@ class DeepQLearning(DriverAlgorithm):
     def __init__(self, q_network: tf.keras.Model = None, optimizer: tf.keras.optimizers.Optimizer = None,
                  replay_size=1000,
                  discount_factor=0.9, exploration=0.1, min_exploration=0.1, exploration_decay=1.1,
-                 exploration_decay_after=1000):
+                 exploration_decay_after=1000,
+                 update_target_after_steps=100):
         super().__init__()
         self.q_network = q_network
+        if self.q_network is None:
+            self.target_network = None
+        else:
+            self.target_network = clone_model(self.q_network)
         self.optimizer = optimizer
         self.replay_buffer = ExperienceReplay(replay_size)
         self.exploration = exploration
@@ -84,6 +90,8 @@ class DeepQLearning(DriverAlgorithm):
         self.exploration_decay_after = exploration_decay_after
         self.discount_factor = discount_factor
         self.loss_fn = tf.keras.losses.MeanSquaredError()
+        self.update_target_after = update_target_after_steps
+        self.step_counter = 0
 
     def train(self, initial_episode, episodes, metric, batch_size=16):
         metric.load()
@@ -104,7 +112,7 @@ class DeepQLearning(DriverAlgorithm):
 
                 sampled_transitions = self.replay_buffer.sample_batch_transitions(batch_size=batch_size)
 
-                next_action_values = tf.reduce_max(self.q_network(sampled_transitions[3]), axis=1)
+                next_action_values = tf.reduce_max(self.target_network(sampled_transitions[3]), axis=1)
                 targets = []
                 for r, nav, term in zip(sampled_transitions[2], next_action_values, sampled_transitions[4]):
                     targets.append([(r + self.discount_factor * nav).numpy() if not term else r.numpy()])
@@ -129,6 +137,9 @@ class DeepQLearning(DriverAlgorithm):
                         "explored": explored
                     }
                 )
+                self.step_counter += 1
+                if self.step_counter % self.update_target_after == 0:
+                    self.target_network.set_weights(self.q_network.get_weights())
 
             metric.on_episode_end({"episode": i, "exploration": self.exploration})
             if (i + 1) % self.exploration_decay_after == 0:
@@ -153,6 +164,11 @@ class DeepQLearning(DriverAlgorithm):
 
     def save(self, path=""):
         self.q_network.save(os.path.join(path, "q_network"))
+        self.target_network.save(os.path.join(path, "target_network"))
 
     def load(self, path=""):
         self.q_network = load_model(os.path.join(path, "q_network"))
+        try:
+            self.target_network = load_model(os.path.join(path, "target_network"))
+        except:
+            pass

@@ -3,20 +3,20 @@ Reward:
 - -1 for cart position greater than +-1, cart velocity greater than 50%, pole angle greater than 8 degress and pole angular velocity is more than 65%
 - 1 for pole angle within 4 degrees, angular velocity within 15%, cart position within 1 and cart velocity is within 50%
 
-Changes from last training: Updated the reward function to include the cart velocity and decreased the range for pole angular velocity.
- Added Sigmoid in first hidden layer of Q Network
+Changes from last training: Added Target network to Deep Q Learning
 
 Training:
-- Algorithm: DeepQLearning (No Target Network)
-- Episodes: 2000
+- Algorithm: DeepQLearning
+- Episodes: 3900
 - Batch Size: 16
 - Replay Size: 1000
 - Exploration Decay: 1.1
 - Min Exploration: 0.1
 - Exploration Decay After: 100
 - Discount Factor: 0.9
+- Update Target Network Parameters After: 100 steps
 - Optimizer: RMSProp
 
 Results:
 Training satisfactory. Agent is able to keep the pole upwright, balanced, and the angular velocity in control with
-very little actions on the cart. It might need more training as it was stopped at 16% exploration.
+very little actions on the cart. It is even able to recover from a fairly disbalanced state

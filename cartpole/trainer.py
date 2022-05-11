@@ -26,9 +26,9 @@ metric = AvgTotalReward(os.path.join(AGENT_PATH, "train_metric"))
 
 # # Start training from scratch
 driver_algorithm = DeepQLearning(q_net, optimizer, exploration=1, min_exploration=0.1, exploration_decay=1.1,
-                                            exploration_decay_after=100)
+                                 exploration_decay_after=100)
 agent = Agent(interpreter, driver_algorithm)
-for i in range(1):
+for i in range(50):
     print("Training Iteration: ", i)
     agent.train(initial_episode=100 * i, episodes=100, metric=metric)
     agent.save(AGENT_PATH)
