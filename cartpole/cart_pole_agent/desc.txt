@@ -15,7 +15,7 @@ Training:
 - Min Exploration: 0.1
 - Exploration Decay After: 100
 - Discount Factor: 0.9
-- Optimizer: RMSProp
+- Optimizer: Adam
 
 Results:
 Training satisfactory. Agent is able to keep the pole upwright, balanced, and the angular velocity in control with

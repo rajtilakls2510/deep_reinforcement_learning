@@ -11,9 +11,9 @@ class Terminal:
     # Base class to seamlessly interface with any kind of environment (even non-gym)
 
     # Returns the current observation from the environment
-    # Returns: frame, state, env_finished or not
+    # Returns: frame, state, env_finished or not, reward
     def observation(self):
-        return None, None, True
+        return None, None, True, 0
 
     # Takes an action on the environment
     def action(self, action):
@@ -39,18 +39,19 @@ class Interpreter:
 
     # Returns the current state from observation, reward, frame
     def observe(self):
-        frame, state, self.env_finished = self.terminal.observation()
+        frame, state, self.env_finished, reward = self.terminal.observation()
         self.steps_taken += 1
         preprocessed_state = self.state_preprocessing(state)
-        reward = self.calculate_reward(state, preprocessed_state)
+        reward = self.calculate_reward(state, preprocessed_state, reward)
         if self.env_finished:
             self.steps_taken = 0
         return preprocessed_state, reward, frame
 
-    # Calculates and returns the reward for the current state
+    # Calculates and returns the reward for the current state (if no manual reward calculation is needed,
+    # reward observed from the environment is returned)
     # For convenience, both the state and its preprocessed version is given to the function
-    def calculate_reward(self, state, preprocessed_state):
-        pass  # Calculates the reward based on the state
+    def calculate_reward(self, state, preprocessed_state, reward):
+        return reward  # Calculates the reward based on the state
 
     # Preprocesses a state
     def state_preprocessing(self, state):

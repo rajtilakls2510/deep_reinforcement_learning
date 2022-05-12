@@ -74,7 +74,7 @@ class DeepQLearning(DriverAlgorithm):
     def __init__(self, q_network: tf.keras.Model = None, optimizer: tf.keras.optimizers.Optimizer = None,
                  replay_size=1000,
                  discount_factor=0.9, exploration=0.1, min_exploration=0.1, exploration_decay=1.1,
-                 exploration_decay_after=1000,
+                 exploration_decay_after=100,
                  update_target_after_steps=100):
         super().__init__()
         self.q_network = q_network
@@ -171,4 +171,5 @@ class DeepQLearning(DriverAlgorithm):
         try:
             self.target_network = load_model(os.path.join(path, "target_network"))
         except:
-            pass
+            if self.q_network is not None:
+                self.target_network = clone_model(self.q_network)

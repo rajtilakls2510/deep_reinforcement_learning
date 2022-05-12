@@ -8,13 +8,14 @@ class CartpoleTerminal(Terminal):
         super(CartpoleTerminal, self).__init__()
         self.env = env
         self.env_finished = False
+        self.reward = 0
         self.state = self.env.reset()
 
     def observation(self):
-        return self.env.render(mode="rgb_array"), self.state, self.env_finished
+        return self.env.render(mode="rgb_array"), self.state, self.env_finished, self.reward
 
     def action(self, action):
-        self.state, _, self.env_finished, _ = self.env.step(action)
+        self.state, self.reward, self.env_finished, _ = self.env.step(action)
 
     def close(self):
         self.env.close()
@@ -29,7 +30,7 @@ class CartpoleInterpreter(Interpreter):
     def __init__(self, terminal):
         super().__init__(terminal)
 
-    def calculate_reward(self, state, preprocessed_state):
+    def calculate_reward(self, state, preprocessed_state, reward):
         # Calculate reward from state
         reward = 0  # 0 reward for every step
 
