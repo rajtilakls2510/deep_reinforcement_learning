@@ -30,10 +30,10 @@ class MountainCarInterpreter(Interpreter):
         super(MountainCarInterpreter, self).__init__(terminal)
 
     def state_preprocessing(self, state):
-        # preprocessed_state = state.copy()
-        # preprocessed_state[0] = round(preprocessed_state[0], 1)
-        # preprocessed_state[1] = round(preprocessed_state[1], 2)*10
-        return state
+        preprocessed_state = state.copy()
+        preprocessed_state[0] = round(preprocessed_state[0], 1)
+        preprocessed_state[1] = round(preprocessed_state[1], 2)*10
+        return preprocessed_state
 
     def calculate_reward(self, state, preprocessed_state, reward):
         # reward = (state[0] + 0.3)/1.8
@@ -42,7 +42,7 @@ class MountainCarInterpreter(Interpreter):
         if state[0] >= .5:
             reward = 1
 
-        if self.steps_taken > 200:
+        if self.steps_taken > 1000:
             self.env_finished = True
 
         return reward

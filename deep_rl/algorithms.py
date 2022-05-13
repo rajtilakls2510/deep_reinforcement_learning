@@ -186,7 +186,7 @@ class NeuralSarsa(DriverAlgorithm):
         self.exploration_decay_after = exploration_decay_after
         self.min_exploration = min_exploration
 
-    def train(self, initial_episode, episodes, metric, batch_size=16):
+    def train(self, initial_episode, episodes, metric, batch_size=None):
         metric.load()
         metric.on_task_begin()
         for i in tqdm(range(initial_episode, initial_episode + episodes), desc="Episode"):
@@ -265,7 +265,7 @@ class NeuralSarsaLambda(DriverAlgorithm):
         self.exploration_decay_after = exploration_decay_after
         self.min_exploration = min_exploration
 
-    def train(self, initial_episode, episodes, metric, batch_size=16):
+    def train(self, initial_episode, episodes, metric, batch_size=None):
         metric.load()
         metric.on_task_begin()
         for i in tqdm(range(initial_episode, initial_episode + episodes), desc="Episode"):
