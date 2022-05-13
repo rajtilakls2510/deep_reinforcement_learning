@@ -1,5 +1,6 @@
 from deep_rl.agent import Terminal, Interpreter
 from tensorflow import random, int32
+import numpy as np
 
 
 class MountainCarTerminal(Terminal):
@@ -29,6 +30,9 @@ class MountainCarInterpreter(Interpreter):
         super(MountainCarInterpreter, self).__init__(terminal)
 
     def state_preprocessing(self, state):
+        # preprocessed_state = state.copy()
+        # preprocessed_state[0] = round(preprocessed_state[0], 1)
+        # preprocessed_state[1] = round(preprocessed_state[1], 2)*10
         return state
 
     def calculate_reward(self, state, preprocessed_state, reward):
@@ -44,4 +48,4 @@ class MountainCarInterpreter(Interpreter):
         return reward
 
     def get_randomized_action(self):
-        return random.uniform(shape=(), maxval=2, dtype=int32).numpy()
+        return random.uniform(shape=(), maxval=3, dtype=int32).numpy()

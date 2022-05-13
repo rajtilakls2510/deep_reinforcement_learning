@@ -6,7 +6,7 @@ from deep_rl.algorithms import DeepQLearning
 
 interpreter = MountainCarInterpreter(MountainCarTerminal(gym.make("MountainCar-v0")))
 
-AGENT_PATH = "mountain_car_agent2"
+AGENT_PATH = "mountain_car_agent"
 
 driver_algo = DeepQLearning()
 agent = Agent(interpreter, driver_algo)
