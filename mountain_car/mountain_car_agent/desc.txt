@@ -1,0 +1,20 @@
+Reward:
+- -1 For every step taken
+- +1 When the car moves past the goal
+
+
+Training:
+- Algorithm: DeepQLearning
+- Episodes: 2380
+- Batch Size: 16
+- Replay Size: 10000
+- Exploration Decay: 1.1
+- Min Exploration: 0.0
+- Exploration Decay After: 10
+- Discount Factor: 0.9
+- Update Target Network Parameters After: 100 steps
+- Optimizer: Adam
+
+Results:
+Training satisfactory. Agent is able to ultimately reach the goal. Not optimal, more training would
+be helpful.

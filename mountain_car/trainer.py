@@ -16,32 +16,32 @@ gym.envs.registration.register(
 )
 
 interpreter = MountainCarInterpreter(MountainCarTerminal(gym.make("MountainCar1000-v0")))
-AGENT_PATH = "mountain_car_agent2"
+AGENT_PATH = "mountain_car_agent"
 # Q Network
 input = Input(shape=(2,))
-x = Dense(100, activation="relu", kernel_initializer="zeros")(input)
+x = Dense(100, activation="sigmoid", kernel_initializer="zeros")(input)
 output = Dense(3, activation='linear', kernel_initializer="zeros")(x)
 q_network = Model(inputs=input, outputs=output)
 optimizer = Adam(learning_rate=0.001)
 
 metric = AvgTotalReward(os.path.join(AGENT_PATH,"train_metric"))
 
-# driver_algorithm = DeepQLearning(q_network, optimizer,  exploration=1, min_exploration=0.01, exploration_decay_after=50, replay_size=10_000)
-# agent = Agent(interpreter, driver_algorithm)
-# # 10_000 episodes
-# for i in range(10_00):
-#     print("Training Iteration:",i)
-#     agent.train(initial_episode=10 * i, episodes = 10, metric= metric)
-#     agent.save(AGENT_PATH)
-# interpreter.close()
-
-# Load agent and train (change exploration param)
-driver_algorithm = DeepQLearning(q_network=None, optimizer=optimizer, exploration=0.07, min_exploration=0.0, exploration_decay=1.1,
-                                 exploration_decay_after=50, replay_size=10_000)
+driver_algorithm = DeepQLearning(q_network, optimizer,  exploration=0.6, min_exploration=0.0, exploration_decay_after=50, replay_size=10_000)
 agent = Agent(interpreter, driver_algorithm)
-agent.load(AGENT_PATH)
-for i in range(50, 10_00):
-    print("Training Iteration: ", i)
-    agent.train(initial_episode=10 * i, episodes=10, metric=metric)
+# 10_000 episodes
+for i in range(10_00):
+    print("Training Iteration:",i)
+    agent.train(initial_episode=10 * i, episodes = 10, metric= metric)
     agent.save(AGENT_PATH)
 interpreter.close()
+
+# Load agent and train (change exploration param)
+# driver_algorithm = DeepQLearning(optimizer=optimizer, exploration=0.07, min_exploration=0.0, exploration_decay=1.1,
+#                                  exploration_decay_after=50, replay_size=10_000)
+# agent = Agent(interpreter, driver_algorithm)
+# agent.load(AGENT_PATH)
+# for i in range(50, 10_00):
+#     print("Training Iteration: ", i)
+#     agent.train(initial_episode=10 * i, episodes=10, metric=metric)
+#     agent.save(AGENT_PATH)
+# interpreter.close()
