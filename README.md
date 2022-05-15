@@ -2,11 +2,9 @@
 #### A Library for reinforcement learning using tensorflow.
 
 
-https://user-images.githubusercontent.com/53657825/168461640-4ea5f787-58b2-4fda-a064-78082fa782b7.mp4
+![Pole Balancing](https://user-images.githubusercontent.com/53657825/168461787-7ab11b67-cb4b-4e4b-b5b9-9399cfbec4e8.gif)
 
-
-
-https://user-images.githubusercontent.com/53657825/168461626-61da2033-6880-4584-ab74-59f4642dfa37.mp4
+![Mountain Car](https://user-images.githubusercontent.com/53657825/168461800-53e65436-434d-4db8-9e0c-ba87ea3b7eae.gif)
 
 
 
