@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 
 from deep_rl.agent import Agent
-from deep_rl.algorithms import DeepQLearning, NeuralSarsa, NeuralSarsaLambda
+from deep_rl.algorithms import DeepQLearning
 from deep_rl.analytics import AvgTotalReward
 from mountain_car.interface import MountainCarInterpreter, MountainCarTerminal
 

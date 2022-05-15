@@ -174,9 +174,11 @@ class DeepQLearning(DriverAlgorithm):
             if self.q_network is not None:
                 self.target_network = clone_model(self.q_network)
 
+
 class NeuralSarsa(DriverAlgorithm):
 
-    def __init__(self, q_network: tf.keras.Model = None, learning_rate = 0.01, discount_factor = 0.9,exploration = 0.0, exploration_decay = 1.1, min_exploration = 0.1, exploration_decay_after=100):
+    def __init__(self, q_network: tf.keras.Model = None, learning_rate=0.01, discount_factor=0.9, exploration=0.0,
+                 exploration_decay=1.1, min_exploration=0.1, exploration_decay_after=100):
         super(NeuralSarsa, self).__init__()
         self.q_network = q_network
         self.learning_rate = learning_rate
@@ -252,9 +254,11 @@ class NeuralSarsa(DriverAlgorithm):
     def load(self, path=""):
         self.q_network = load_model(os.path.join(path, "q_network"))
 
+
 class NeuralSarsaLambda(DriverAlgorithm):
 
-    def __init__(self, q_network: tf.keras.Model = None, learning_rate = 0.01, discount_factor = 0.9, lmbda = 0.9, exploration = 0.0, exploration_decay = 1.1, min_exploration = 0.1, exploration_decay_after=100):
+    def __init__(self, q_network: tf.keras.Model = None, learning_rate=0.01, discount_factor=0.9, lmbda=0.9,
+                 exploration=0.0, exploration_decay=1.1, min_exploration=0.1, exploration_decay_after=100):
         super(NeuralSarsaLambda, self).__init__()
         self.q_network = q_network
         self.learning_rate = learning_rate

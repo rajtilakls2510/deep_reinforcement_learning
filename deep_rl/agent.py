@@ -91,7 +91,7 @@ class Agent:
         self.driver_algorithm.train(initial_episode, episodes, metric)
         print("Training Complete")
 
-    def infer(self, episodes=1, metric=None, exploration=0.0):
+    def evaluate(self, episodes=1, metric=None, exploration=0.0):
         if metric is None:
             metric = Metric()
         metric.set_driver_algorithm(self.driver_algorithm)

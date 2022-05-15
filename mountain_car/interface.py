@@ -1,6 +1,5 @@
 from deep_rl.agent import Terminal, Interpreter
 from tensorflow import random, int32
-import numpy as np
 
 
 class MountainCarTerminal(Terminal):
