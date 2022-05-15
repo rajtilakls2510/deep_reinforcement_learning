@@ -11,7 +11,7 @@ from tensorflow.keras.optimizers import Adam
 env = gym.make("CartPole-v1")
 interpreter = CartpoleInterpreter(CartpoleTerminal(env))
 
-AGENT_PATH = "cart_pole_agent2"
+AGENT_PATH = "cart_pole_agent"
 
 # Q Network
 

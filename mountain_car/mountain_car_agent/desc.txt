@@ -1,7 +1,7 @@
 Reward:
 - -1 For every step taken
 - +1 When the car moves past the goal
-
+Max Steps: 1000 (instead of 200)
 
 Training:
 - Algorithm: DeepQLearning

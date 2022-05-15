@@ -7,7 +7,7 @@ from deep_rl.algorithms import DeepQLearning
 env = gym.make("CartPole-v1")
 interpreter = CartpoleInterpreter(CartpoleTerminal(env))
 
-AGENT_PATH = "cart_pole_agent2"
+AGENT_PATH = "cart_pole_agent"
 
 driver_algo = DeepQLearning()
 agent = Agent(interpreter, driver_algo)
