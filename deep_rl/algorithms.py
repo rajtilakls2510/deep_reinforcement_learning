@@ -19,7 +19,7 @@ class DriverAlgorithm:
     def train(self, initial_episode, episodes, metric, batch_size=None):
         pass
 
-    # Returns the next action to be takes, its value and whether it was a exploration step or not
+    # Returns the next action to be taken, its value and whether it was a exploration step or not
     def get_action(self, state, explore=0.0):
         return 0, 0, False  # Return: Action, Value for action, Action through exploration or not
 
@@ -73,7 +73,7 @@ class DeepQLearning(DriverAlgorithm):
 
     def __init__(self, q_network: tf.keras.Model = None, optimizer: tf.keras.optimizers.Optimizer = None,
                  replay_size=1000,
-                 discount_factor=0.9, exploration=0.1, min_exploration=0.1, exploration_decay=1.1,
+                 discount_factor=0.9, exploration=0.1, min_exploration=0.0, exploration_decay=1.1,
                  exploration_decay_after=100,
                  update_target_after_steps=100):
         super().__init__()
@@ -165,6 +165,11 @@ class DeepQLearning(DriverAlgorithm):
     def save(self, path=""):
         self.q_network.save(os.path.join(path, "q_network"))
         self.target_network.save(os.path.join(path, "target_network"))
+        try:
+            self.replay_buffer.save(os.path.join(path, "replay"))
+        except:
+            os.makedirs(os.path.join(path, "replay"))
+            self.replay_buffer.save(os.path.join(path, "replay"))
 
     def load(self, path=""):
         self.q_network = load_model(os.path.join(path, "q_network"))
@@ -173,12 +178,13 @@ class DeepQLearning(DriverAlgorithm):
         except:
             if self.q_network is not None:
                 self.target_network = clone_model(self.q_network)
+        self.replay_buffer.load(os.path.join(path, "replay"))
 
 
 class NeuralSarsa(DriverAlgorithm):
 
     def __init__(self, q_network: tf.keras.Model = None, learning_rate=0.01, discount_factor=0.9, exploration=0.0,
-                 exploration_decay=1.1, min_exploration=0.1, exploration_decay_after=100):
+                 exploration_decay=1.1, min_exploration=0.0, exploration_decay_after=100):
         super(NeuralSarsa, self).__init__()
         self.q_network = q_network
         self.learning_rate = learning_rate
@@ -258,7 +264,7 @@ class NeuralSarsa(DriverAlgorithm):
 class NeuralSarsaLambda(DriverAlgorithm):
 
     def __init__(self, q_network: tf.keras.Model = None, learning_rate=0.01, discount_factor=0.9, lmbda=0.9,
-                 exploration=0.0, exploration_decay=1.1, min_exploration=0.1, exploration_decay_after=100):
+                 exploration=0.0, exploration_decay=1.1, min_exploration=0.0, exploration_decay_after=100):
         super(NeuralSarsaLambda, self).__init__()
         self.q_network = q_network
         self.learning_rate = learning_rate

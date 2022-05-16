@@ -1,4 +1,5 @@
 import tensorflow as tf
+import os, pickle
 
 
 class ReplayBuffer:
@@ -12,6 +13,12 @@ class ReplayBuffer:
         pass
 
     def sample_batch_transitions(self, batch_size=16):
+        pass
+
+    def save(self, path=""):
+        pass
+
+    def load(self, path=""):
         pass
 
 
@@ -45,3 +52,12 @@ class ExperienceReplay(ReplayBuffer):
             sampled_terminal_step.append(self.buffer[index][4])
         return tf.constant(sampled_current_states), tf.constant(sampled_actions), tf.constant(
             sampled_rewards, dtype=tf.float32), tf.constant(sampled_next_states), tf.constant(sampled_terminal_step)
+
+    def save(self, path=""):
+        pickle.dump(self.buffer, open(os.path.join(path, "experience_replay.pkl"), "wb"))
+
+    def load(self, path=""):
+        try:
+            self.buffer = pickle.load(open(os.path.join(path, "experience_replay.pkl"), "wb"))
+        except:
+            print("No Experience Replay found")

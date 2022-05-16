@@ -1,9 +1,3 @@
-# Architecture Revamp:
-#  -
-#  - Write some inference metric
-#  -
-#  -
-#  -
 from deep_rl.analytics import Metric
 
 
@@ -53,9 +47,9 @@ class Interpreter:
     def calculate_reward(self, state, preprocessed_state, reward):
         return reward  # Calculates the reward based on the state
 
-    # Preprocesses a state
+    # Preprocesses a state (Default, returns state itself)
     def state_preprocessing(self, state):
-        pass
+        return state
 
     # Returns a random action
     def get_randomized_action(self):

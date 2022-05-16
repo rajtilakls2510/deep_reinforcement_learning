@@ -1,8 +1,0 @@
-pandas==1.4.1
-tensorflow==2.8.0
-numpy==1.22.3
-tqdm==4.63.1
-matplotlib==3.5.2
-gym==0.23.1
-imageio==2.16.1
-opencv-python==4.5.5.64
