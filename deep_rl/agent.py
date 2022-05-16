@@ -77,13 +77,11 @@ class Agent:
         self.driver_algorithm = driver_algorithm
         self.driver_algorithm.set_interpreter(interpreter)
 
-    def train(self, initial_episode=0, episodes=100, metric=None):
-        print("Starting Training")
+    def train(self, initial_episode=0, episodes=100, metric=None, **kwargs):
         if metric is None:
             metric = Metric()
         metric.set_driver_algorithm(self.driver_algorithm)
-        self.driver_algorithm.train(initial_episode, episodes, metric)
-        print("Training Complete")
+        self.driver_algorithm.train(initial_episode, episodes, metric, **kwargs)
 
     def evaluate(self, episodes=1, metric=None, exploration=0.0):
         if metric is None:

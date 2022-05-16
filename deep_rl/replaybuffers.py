@@ -30,7 +30,7 @@ class ExperienceReplay(ReplayBuffer):
 
     # Transition Format: current_state, action, reward, next_state, terminal step or not
     def insert_transition(self, transition):
-        if len(self.buffer) == self.max_transitions:
+        if len(self.buffer) >= self.max_transitions:
             self.buffer.pop(0)
         self.buffer.append(transition)
 
@@ -58,6 +58,7 @@ class ExperienceReplay(ReplayBuffer):
 
     def load(self, path=""):
         try:
-            self.buffer = pickle.load(open(os.path.join(path, "experience_replay.pkl"), "wb"))
+            self.buffer = pickle.load(open(os.path.join(path, "experience_replay.pkl"), "rb"))
+            print("Found "+str(len(self.buffer))+" transitions")
         except:
             print("No Experience Replay found")
