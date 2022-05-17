@@ -89,7 +89,7 @@ class DeepQLearning(DriverAlgorithm):
         self.exploration_decay = exploration_decay
         self.exploration_decay_after = exploration_decay_after
         self.discount_factor = discount_factor
-        self.loss_fn = tf.keras.losses.MeanSquaredError()
+        self.loss_fn = tf.keras.losses.Huber()
         self.update_target_after = update_target_after_steps
         self.step_counter = 0
 
