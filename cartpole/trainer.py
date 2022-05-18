@@ -22,10 +22,11 @@ output = Dense(2, activation="linear")(x)
 q_net = Model(inputs=net_input, outputs=output)
 
 optimizer = Adam()
+q_net.compile(optimizer=optimizer)
 metric = AvgTotalReward(os.path.join(AGENT_PATH, "train_metric"))
 
 # # Start training from scratch
-driver_algorithm = DeepQLearning(q_net, optimizer, exploration=1, min_exploration=0.1, exploration_decay=1.1,
+driver_algorithm = DeepQLearning(q_net, exploration=1, min_exploration=0.1, exploration_decay=1.1,
                                  exploration_decay_after=100)
 agent = Agent(interpreter, driver_algorithm)
 for i in range(50):
@@ -35,7 +36,7 @@ for i in range(50):
 interpreter.close()
 
 # Load agent and train (change exploration param)
-# driver_algorithm = DeepQLearning(q_net, optimizer, exploration=0.05, min_exploration=0.01, exploration_decay=1.15,
+# driver_algorithm = DeepQLearning(exploration=0.05, min_exploration=0.01, exploration_decay=1.15,
 #                                  exploration_decay_after=100)
 # agent = Agent(interpreter, driver_algorithm)
 # agent.load(AGENT_PATH)
