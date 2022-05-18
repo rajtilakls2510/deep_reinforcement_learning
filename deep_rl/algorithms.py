@@ -1,4 +1,4 @@
-import os
+import os, pickle
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model, clone_model
@@ -71,7 +71,7 @@ class DriverAlgorithm:
 
 class DeepQLearning(DriverAlgorithm):
 
-    def __init__(self, q_network: tf.keras.Model = None, optimizer: tf.keras.optimizers.Optimizer = None,
+    def __init__(self, q_network: tf.keras.Model = None,
                  replay_size=1000,
                  discount_factor=0.9, exploration=0.1, min_exploration=0.0, exploration_decay=1.1,
                  exploration_decay_after=100,
@@ -82,7 +82,6 @@ class DeepQLearning(DriverAlgorithm):
             self.target_network = None
         else:
             self.target_network = clone_model(self.q_network)
-        self.optimizer = optimizer
         self.replay_buffer = ExperienceReplay(replay_size)
         self.exploration = exploration
         self.min_exploration = min_exploration
@@ -125,7 +124,7 @@ class DeepQLearning(DriverAlgorithm):
                     loss = self.loss_fn(targets, new_preds)
 
                 grads = tape.gradient(loss, self.q_network.trainable_weights)
-                self.optimizer.apply_gradients(zip(grads, self.q_network.trainable_weights))
+                self.q_network.optimizer.apply_gradients(zip(grads, self.q_network.trainable_weights))
 
                 current_state = next_state
 

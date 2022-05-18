@@ -6,7 +6,7 @@ from deep_rl.algorithms import DeepQLearning
 
 interpreter = LunarLanderInterpreter(LunarLanderTerminal(gym.make("LunarLander-v2")))
 
-AGENT_PATH = "lunar_lander_agent3"
+AGENT_PATH = "lunar_lander_agent"
 
 driver_algo = DeepQLearning()
 agent = Agent(interpreter, driver_algo)
