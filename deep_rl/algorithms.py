@@ -165,11 +165,7 @@ class DeepQLearning(DriverAlgorithm):
     def save(self, path=""):
         self.q_network.save(os.path.join(path, "q_network"))
         self.target_network.save(os.path.join(path, "target_network"))
-        try:
-            self.replay_buffer.save(os.path.join(path, "replay"))
-        except:
-            os.makedirs(os.path.join(path, "replay"))
-            self.replay_buffer.save(os.path.join(path, "replay"))
+        self.replay_buffer.save(os.path.join(path, "replay"))
 
     def load(self, path=""):
         self.q_network = load_model(os.path.join(path, "q_network"))

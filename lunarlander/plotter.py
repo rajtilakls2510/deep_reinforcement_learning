@@ -24,7 +24,7 @@ fig3 = plt.figure(3)
 fig4 = plt.figure(4)
 episodic_data = None
 
-AGENT_TRAIN_METRIC_PATH = os.path.join("lunar_lander_agent2", "train_metric", "episodic_data.csv")
+AGENT_TRAIN_METRIC_PATH = os.path.join("lunar_lander_agent3", "train_metric", "episodic_data.csv")
 
 
 def read_data():

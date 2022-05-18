@@ -34,6 +34,6 @@ class LunarLanderInterpreter(Interpreter):
 
     # Modifying the reward so that when the episode has finished and the agent is still hovering....penalize heavily
     def calculate_reward(self, state, preprocessed_state, reward):
-        if self.is_episode_finished() and state[6] == 0 and state[7] == 0:
-            return reward - 100
+        # if self.is_episode_finished() and state[6] == 0 and state[7] == 0:
+        #     return reward - 100
         return reward

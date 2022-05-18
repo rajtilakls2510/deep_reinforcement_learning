@@ -54,7 +54,11 @@ class ExperienceReplay(ReplayBuffer):
             sampled_rewards, dtype=tf.float32), tf.constant(sampled_next_states), tf.constant(sampled_terminal_step)
 
     def save(self, path=""):
-        pickle.dump(self.buffer, open(os.path.join(path, "experience_replay.pkl"), "wb"))
+        try:
+            pickle.dump(self.buffer, open(os.path.join(path, "experience_replay.pkl"), "wb"))
+        except:
+            os.makedirs(path)
+            pickle.dump(self.buffer, open(os.path.join(path, "experience_replay.pkl"), "wb"))
 
     def load(self, path=""):
         try:

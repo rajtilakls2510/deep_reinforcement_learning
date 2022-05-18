@@ -9,16 +9,17 @@ from deep_rl.analytics import AvgTotalReward
 from lunarlander.interface import LunarLanderTerminal, LunarLanderInterpreter
 
 interpreter = LunarLanderInterpreter(LunarLanderTerminal(gym.make("LunarLander-v2")))
-AGENT_PATH = "lunar_lander_agent2"
+AGENT_PATH = "lunar_lander_agent3"
 
 # Q Network
 input = Input(shape=(8,))
-x = Dense(512, activation="relu")(input)
-x = Dense(256, activation="relu")(x)
+x = Dense(64, activation="relu")(input)
+x = Dense(64, activation="relu")(x)
+x = Dense(32, activation="relu")(x)
 output = Dense(4, activation="linear")(x)
 q_network = Model(inputs=input, outputs=output)
 
-optimizer = Adam()
+optimizer = Adam(learning_rate=0.0005)
 
 metric = AvgTotalReward(os.path.join(AGENT_PATH, "train_metric"))
 
@@ -26,11 +27,12 @@ metric = AvgTotalReward(os.path.join(AGENT_PATH, "train_metric"))
 driver_algorithm = DeepQLearning(
     q_network,
     optimizer,
+    discount_factor=0.999,
     exploration=1,
     min_exploration=0.01,
-    exploration_decay=1.005,
+    exploration_decay=1.01,
     exploration_decay_after=1,
-    update_target_after_steps=100,
+    update_target_after_steps=1_000,
     replay_size=1_00_000
 )
 
@@ -44,16 +46,16 @@ interpreter.close()
 # Load agent and train (change exploration param)
 # driver_algorithm = DeepQLearning(
 #     optimizer=optimizer,
-#     exploration=0.16,
-#     min_exploration=0.0,
-#     exploration_decay=1.15,
+#     exploration=0.3,
+#     min_exploration=0.05,
+#     exploration_decay=1.01,
 #     exploration_decay_after=50,
-#     update_target_after_steps=100,
-#     replay_size=10_000
+#     update_target_after_steps=1_000,
+#     replay_size=1_00_000
 # )
 # agent = Agent(interpreter, driver_algorithm)
 # agent.load(AGENT_PATH)
-# for i in range(1_19, 10_00):
+# for i in range(5_8, 2_00):
 #     print("Training Iteration: ", i)
 #     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
 #     agent.save(AGENT_PATH)
