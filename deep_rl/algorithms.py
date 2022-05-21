@@ -26,22 +26,22 @@ class DriverAlgorithm:
     # Generated episodes and returns list frames for each episode
     def infer(self, episodes, metric, exploration=0.0):
         metric.on_task_begin()
-        rgb_array = []
+        episode_data = []
         for _ in range(episodes):
             current_episode = []
             metric.on_episode_begin()
             self.interpreter.reset()
             state, reward, frame = self.interpreter.observe()
             while not self.interpreter.is_episode_finished():
-                current_episode.append(frame)
                 action, action_, explored = self.get_action(state, exploration)
                 self.interpreter.take_action(action)
                 state, reward, frame = self.interpreter.observe()
+                current_episode.append([frame, reward, state, action, action_, explored])
                 metric.on_episode_step()
-            rgb_array.append(current_episode)
+            episode_data.append(current_episode)
             metric.on_episode_end()
         metric.on_task_end()
-        return np.array(rgb_array)
+        return np.array(episode_data)
 
     # Return states after following a random policy
     def get_random_states(self, num_states=20):

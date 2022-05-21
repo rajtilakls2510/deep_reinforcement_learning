@@ -23,8 +23,8 @@ agent.load(AGENT_PATH)
 # for i in range(5):
 #     rgb_array = agent.evaluate(episodes=1, exploration = 0.0)[0]
 #     print("Episode:",i+1, "Length:", len(rgb_array))
-#     for frame in rgb_array:
-#         cv2.imshow("Episode", frame)
+#     for episode in rgb_array:
+#         cv2.imshow("Episode", episode[0])
 #         cv2.waitKey(10)
 # interpreter.close()
 # cv2.destroyAllWindows()
@@ -38,5 +38,5 @@ rgb_array = agent.evaluate(episodes=5)
 for i, episode in enumerate(rgb_array):
     with imageio.get_writer(os.path.join(AGENT_PATH, "eval", "vid" + str(i) + "_" + str(len(episode)) + ".mp4"),
                             fps=30) as video:
-        for frame in episode:
-            video.append_data(frame)
+        for ep in episode:
+            video.append_data(ep[0])
