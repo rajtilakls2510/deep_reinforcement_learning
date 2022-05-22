@@ -72,6 +72,8 @@ class DriverAlgorithm:
 class DeepQLearning(DriverAlgorithm):
 
     def __init__(self, q_network: tf.keras.Model = None,
+                 loss=tf.keras.losses.Huber(),
+                 learn_after_steps = 1,
                  replay_size=1000,
                  discount_factor=0.9, exploration=0.1, min_exploration=0.0, exploration_decay=1.1,
                  exploration_decay_after=100,
@@ -83,12 +85,13 @@ class DeepQLearning(DriverAlgorithm):
         else:
             self.target_network = clone_model(self.q_network)
         self.replay_buffer = ExperienceReplay(replay_size)
+        self.loss_fn = loss
+        self.learn_after_steps = learn_after_steps
         self.exploration = exploration
         self.min_exploration = min_exploration
         self.exploration_decay = exploration_decay
         self.exploration_decay_after = exploration_decay_after
         self.discount_factor = discount_factor
-        self.loss_fn = tf.keras.losses.Huber()
         self.update_target_after = update_target_after_steps
         self.step_counter = 0
 
@@ -109,25 +112,6 @@ class DeepQLearning(DriverAlgorithm):
                 self.replay_buffer.insert_transition(
                     [current_state, action, reward, next_state, self.interpreter.is_episode_finished()])
 
-                sampled_transitions = self.replay_buffer.sample_batch_transitions(batch_size=batch_size)
-
-                next_action_values = tf.reduce_max(self.target_network(sampled_transitions[3]), axis=1)
-                targets = []
-                for r, nav, term in zip(sampled_transitions[2], next_action_values, sampled_transitions[4]):
-                    targets.append([(r + self.discount_factor * nav).numpy() if not term else r.numpy()])
-                targets = tf.constant(targets)
-                with tf.GradientTape() as tape:
-                    preds = self.q_network(sampled_transitions[0])
-                    batch_nums = tf.range(0, limit=preds.get_shape().as_list()[0])
-                    indices = tf.stack((batch_nums, sampled_transitions[1]), axis=1)
-                    new_preds = tf.gather_nd(preds, indices)
-                    loss = self.loss_fn(targets, new_preds)
-
-                grads = tape.gradient(loss, self.q_network.trainable_weights)
-                self.q_network.optimizer.apply_gradients(zip(grads, self.q_network.trainable_weights))
-
-                current_state = next_state
-
                 metric.on_episode_step(
                     {
                         "action_value": action_value,
@@ -136,6 +120,27 @@ class DeepQLearning(DriverAlgorithm):
                         "explored": explored
                     }
                 )
+
+                if self.step_counter % self.learn_after_steps == 0:
+                    sampled_transitions = self.replay_buffer.sample_batch_transitions(batch_size=batch_size)
+
+                    next_action_values = tf.reduce_max(self.target_network(sampled_transitions[3]), axis=1)
+                    targets = []
+                    for r, nav, term in zip(sampled_transitions[2], next_action_values, sampled_transitions[4]):
+                        targets.append([(r + self.discount_factor * nav).numpy() if not term else r.numpy()])
+                    targets = tf.constant(targets)
+                    with tf.GradientTape() as tape:
+                        preds = self.q_network(sampled_transitions[0])
+                        batch_nums = tf.range(0, limit=preds.get_shape().as_list()[0])
+                        indices = tf.stack((batch_nums, sampled_transitions[1]), axis=1)
+                        new_preds = tf.gather_nd(preds, indices)
+                        loss = self.loss_fn(targets, new_preds)
+
+                    grads = tape.gradient(loss, self.q_network.trainable_weights)
+                    self.q_network.optimizer.apply_gradients(zip(grads, self.q_network.trainable_weights))
+
+                    current_state = next_state
+
                 self.step_counter += 1
                 if self.step_counter % self.update_target_after == 0:
                     self.target_network.set_weights(self.q_network.get_weights())

@@ -1,5 +1,6 @@
 from deep_rl.agent import Terminal, Interpreter
 from tensorflow import random, int32
+import numpy as np
 
 
 class LunarLanderTerminal(Terminal):
@@ -28,11 +29,7 @@ class LunarLanderInterpreter(Interpreter):
 
     def __init__(self, terminal: Terminal):
         super(LunarLanderInterpreter, self).__init__(terminal)
+        self.last_action = 0
 
     def get_randomized_action(self):
         return random.uniform(shape=(), maxval=4, dtype=int32).numpy()
-
-    def calculate_reward(self, state, preprocessed_state, reward):
-        # if self.is_episode_finished() and state[6] == 0 and state[7] == 0:
-        #     return reward - 100
-        return reward / 10
