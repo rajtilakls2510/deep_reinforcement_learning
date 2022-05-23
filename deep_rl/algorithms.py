@@ -238,9 +238,9 @@ class DoubleDeepQLearning(DriverAlgorithm):
 
                     # next_action_values = tf.reduce_max(self.target_network(sampled_transitions[3]), axis=1)
 
-                    next_actions = tf.argmax(self.q_network(sampled_transitions[3]), axis=1)
+                    next_actions = tf.argmax(self.q_network(sampled_transitions[3]), axis=1, output_type=tf.int32)
                     next_action_values = self.target_network(sampled_transitions[3])
-                    batch_nums = tf.range(0, limit=batch_size)
+                    batch_nums = tf.range(0, limit=next_action_values.get_shape().as_list()[0])
                     indices = tf.stack((batch_nums, next_actions), axis=1)
                     next_action_values = tf.gather_nd(next_action_values, indices)
                     targets = []

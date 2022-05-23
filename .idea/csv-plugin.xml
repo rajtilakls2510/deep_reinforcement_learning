@@ -10,6 +10,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\cartpole\cart_pole_agent\train_metric\episodic_data.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
       </map>
     </option>
   </component>

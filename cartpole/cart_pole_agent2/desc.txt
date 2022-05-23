@@ -1,0 +1,23 @@
+Reward:
+- 0 for every step
+- -1 for cart position greater than +-1, cart velocity greater than 50%, pole angle greater than 8 degress and pole angular velocity is more than 65%
+- 1 for pole angle within 4 degrees, angular velocity within 15%, cart position within 1 and cart velocity is within 50%
+
+
+Training:
+- Algorithm: DoubleDeepQLearning
+- Episodes: 600
+- Loss: Huber
+- Batch Size: 64
+- Replay Size: 1_00_000
+- Exploration Decay: 1.005
+- Min Exploration: 0.01
+- Exploration Decay After: 1
+- Discount Factor: 0.99
+- Update Target Network Parameters After: 1_000 steps
+- Optimizer: Adam
+- Learning Rate: 0.001
+
+Results:
+Training satisfactory. Agent is able to keep the pole upwright, balanced, and the angular velocity in control with
+very little actions on the cart.
