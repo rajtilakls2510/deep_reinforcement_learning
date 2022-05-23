@@ -17,6 +17,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\lunarlander\lunar_lander_agent2\train_metric\episodic_data.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
       </map>
     </option>
   </component>

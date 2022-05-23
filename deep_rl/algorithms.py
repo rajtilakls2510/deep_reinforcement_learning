@@ -232,7 +232,7 @@ class DoubleDeepQLearning(DriverAlgorithm):
                         "explored": explored
                     }
                 )
-
+                self.step_counter += 1
                 if self.step_counter % self.learn_after_steps == 0:
                     sampled_transitions = self.replay_buffer.sample_batch_transitions(batch_size=batch_size)
 
@@ -260,7 +260,6 @@ class DoubleDeepQLearning(DriverAlgorithm):
 
                     current_state = next_state
 
-                self.step_counter += 1
                 if self.step_counter % self.update_target_after == 0:
                     self.target_network.set_weights(self.q_network.get_weights())
 
