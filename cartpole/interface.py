@@ -54,8 +54,8 @@ class CartpoleInterpreter(Interpreter):
         ):
             reward = 1
 
-        # If the agent could not balance the pole within 200 steps, end the episode
-        if self.steps_taken > 200:
+        # If the agent could not balance the pole within 500 steps, end the episode
+        if self.steps_taken > 500:
             self.env_finished = True
 
         return reward

@@ -16,8 +16,8 @@ AGENT_PATH = "cart_pole_agent"
 # Q Network
 
 net_input = Input(shape=(4,))
-x = Dense(30, activation="sigmoid")(net_input)
-x = Dense(20, activation="relu")(x)
+x = Dense(32, activation="relu")(net_input)
+x = Dense(16, activation="relu")(x)
 output = Dense(2, activation="linear")(x)
 q_net = Model(inputs=net_input, outputs=output)
 
@@ -26,22 +26,39 @@ q_net.compile(optimizer=optimizer)
 metric = AvgTotalReward(os.path.join(AGENT_PATH, "train_metric"))
 
 # # Start training from scratch
-driver_algorithm = DeepQLearning(q_net, exploration=1, min_exploration=0.1, exploration_decay=1.1,
-                                 exploration_decay_after=100)
+driver_algorithm = DeepQLearning(
+    q_net,
+    learn_after_steps=3,
+    replay_size= 1_00_000,
+    discount_factor= 0.99,
+    exploration=1,
+    min_exploration=0.01,
+    exploration_decay=1.005,
+    exploration_decay_after=1,
+    update_target_after_steps=1_000
+)
 agent = Agent(interpreter, driver_algorithm)
-for i in range(50):
+for i in range(5_0):
     print("Training Iteration: ", i)
-    agent.train(initial_episode=100 * i, episodes=100, metric=metric)
+    agent.train(initial_episode=100 * i, episodes=100, batch_size=64, metric=metric)
     agent.save(AGENT_PATH)
 interpreter.close()
 
 # Load agent and train (change exploration param)
-# driver_algorithm = DeepQLearning(exploration=0.05, min_exploration=0.01, exploration_decay=1.15,
-#                                  exploration_decay_after=100)
+# driver_algorithm = DeepQLearning(
+#     learn_after_steps=3,
+#     replay_size= 1_00_000,
+#     discount_factor= 0.99,
+#     exploration=1,
+#     min_exploration=0.01,
+#     exploration_decay=1.005,
+#     exploration_decay_after=1,
+#     update_target_after_steps=1_000
+# )
 # agent = Agent(interpreter, driver_algorithm)
 # agent.load(AGENT_PATH)
 # for i in range(1, 2):
 #     print("Training Iteration: ", i)
-#     agent.train(initial_episode=100 * i, episodes=100, metric=metric)
+#     agent.train(initial_episode=100 * i, episodes=100, batch_size=64, metric=metric)
 #     agent.save(AGENT_PATH)
 # interpreter.close()
