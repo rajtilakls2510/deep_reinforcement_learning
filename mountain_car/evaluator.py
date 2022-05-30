@@ -6,7 +6,7 @@ from deep_rl.algorithms import DeepQLearning
 
 gym.envs.registration.register(
     id="MountainCar1000-v0",
-    entry_point='gym.envs.classic_control:MountainCarEnv',
+    entry_point='gym.envs.classic_control.mountain_car:MountainCarEnv',
     max_episode_steps=1000,  # MountainCar-v0 uses 200,
     reward_threshold=-110.0,
 )
