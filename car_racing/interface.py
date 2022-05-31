@@ -31,10 +31,11 @@ class CarRacingInterpreter(Interpreter):
         super(CarRacingInterpreter, self).__init__(terminal)
         self.frame_buffer = zeros(shape=(96, 96, 3 * frame_buffer_size))
         self.rescale = Rescaling(scale=1.0 / 255)
+        self.count = 0
 
     def get_randomized_action(self):
-        return random.uniform(shape=(), maxval=5, dtype=int32).numpy()
+        return random.uniform(shape=(), maxval=5, dtype=int32)
 
     def state_preprocessing(self, state):
         self.frame_buffer = concat([self.frame_buffer[:,:,3:], self.rescale(state)], axis=-1)
-        return self.frame_buffer.numpy()
+        return self.frame_buffer

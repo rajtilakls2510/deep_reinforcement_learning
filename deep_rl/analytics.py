@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from tensorflow.math import reduce_mean
+import tensorflow as tf
 import pickle
 
 
@@ -41,11 +41,11 @@ class AvgTotalReward(Metric):
         super(AvgTotalReward, self).__init__(path)
         self.episodic_data = {"episode": [], "length": [], "total_reward": [], "avg_q": [], "exploration": []}
         self.current_episode = []
-        self.random_states = []
+        self.random_states = tf.constant([], dtype=tf.float32)
 
     def on_task_begin(self, data=None):
         print("Found " + str(len(self.episodic_data["episode"])) + " episode(s)")
-        if not self.random_states:
+        if self.random_states.shape[0] == 0:
             self.random_states = self.driver_algorithm.get_random_states()
 
     def on_episode_begin(self, data=None):
@@ -64,7 +64,7 @@ class AvgTotalReward(Metric):
         self.episodic_data["length"].append(len(self.current_episode))
         self.episodic_data["total_reward"].append(total_reward)
         self.episodic_data["exploration"].append(data["exploration"])
-        self.episodic_data["avg_q"].append(reduce_mean(self.driver_algorithm.get_values(self.random_states)).numpy())
+        self.episodic_data["avg_q"].append(tf.reduce_mean(self.driver_algorithm.get_values(self.random_states)).numpy())
 
     # def on_task_end(self, data=None):
 

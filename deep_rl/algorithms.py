@@ -22,7 +22,8 @@ class DriverAlgorithm:
 
     # Returns the next action to be taken, its value and whether it was a exploration step or not
     def get_action(self, state, explore=0.0):
-        return 0, 0, False  # Return: Action, Value for action, Action through exploration or not
+        return tf.constant(0), tf.constant(0), tf.constant(
+            False)  # Return: Action, Value for action, Action through exploration or not
 
     # Generated episodes and returns list frames for each episode
     def infer(self, episodes, metric, exploration=0.0):
@@ -33,11 +34,13 @@ class DriverAlgorithm:
             metric.on_episode_begin()
             self.interpreter.reset()
             state, reward, frame = self.interpreter.observe()
+            state = tf.convert_to_tensor(state, tf.float32)
             while not self.interpreter.is_episode_finished():
                 action, action_, explored = self.get_action(state, exploration)
-                self.interpreter.take_action(action)
+                self.interpreter.take_action(action.numpy())
                 state, reward, frame = self.interpreter.observe()
-                current_episode.append([frame, reward, state, action, action_, explored])
+                state = tf.convert_to_tensor(state, tf.float32)
+                current_episode.append([frame, reward, state.numpy(), action.numpy(), action_.numpy(), explored.numpy()])
                 metric.on_episode_step()
             episode_data.append(current_episode)
             metric.on_episode_end()
@@ -51,11 +54,12 @@ class DriverAlgorithm:
         state, _, _ = self.interpreter.observe()
         while num_states > 0 and not self.interpreter.is_episode_finished():
             random_states.append(state)
+            state = tf.convert_to_tensor(state, tf.float32)
             action, action_, _ = self.get_action(state)
-            self.interpreter.take_action(action)
+            self.interpreter.take_action(action.numpy())
             state, _, _ = self.interpreter.observe()
             num_states -= 1
-        return random_states
+        return tf.convert_to_tensor(random_states, tf.float32)
 
     # Return Q values for a list of states
     def get_values(self, states):
@@ -106,41 +110,44 @@ class DeepQLearning(DriverAlgorithm):
             self.interpreter.reset()
             episode_start_chkpt = perf_counter()
             current_state, _, _ = self.interpreter.observe()
+            current_state = tf.convert_to_tensor(current_state, tf.float32)
             while not self.interpreter.is_episode_finished():
                 learn_start_chkpt = perf_counter()
                 action, action_value, explored = self.get_action(current_state, explore=self.exploration)
                 action_selection_chkpt = perf_counter()
-                self.interpreter.take_action(action)
+                self.interpreter.take_action(action.numpy())
                 action_application_chkpt = perf_counter()
                 next_state, reward, _ = self.interpreter.observe()
+                next_state = tf.convert_to_tensor(next_state, tf.float32)
+                reward = tf.convert_to_tensor(reward, tf.float32)
                 action_observation_chkpt = perf_counter()
 
                 self.replay_buffer.insert_transition(
-                    [current_state, action, reward, next_state, self.interpreter.is_episode_finished()])
+                    [current_state, action, reward, next_state,
+                     tf.convert_to_tensor(self.interpreter.is_episode_finished())])
                 transition_insertion_chkpt = perf_counter()
                 metric.on_episode_step(
                     {
-                        "action_value": action_value,
-                        "action": action,
-                        "reward": reward,
-                        "explored": explored
+                        "action_value": action_value.numpy(),
+                        "action": action.numpy(),
+                        "reward": reward.numpy(),
+                        "explored": explored.numpy()
                     }
                 )
+
                 metric_step_insertion_chkpt = perf_counter()
                 if self.step_counter % self.learn_after_steps == 0:
-                    sampled_transitions = self.replay_buffer.sample_batch_transitions(batch_size=batch_size)
+                    current_states, actions, rewards, next_states, terminals = self.replay_buffer.sample_batch_transitions(batch_size=batch_size)
                     transition_sampling_chkpt = perf_counter()
 
-                    next_action_values = tf.reduce_max(self.target_network(sampled_transitions[3]), axis=1)
-                    targets = []
-                    for r, nav, term in zip(sampled_transitions[2], next_action_values, sampled_transitions[4]):
-                        targets.append([(r + self.discount_factor * nav).numpy() if not term else r.numpy()])
-                    targets = tf.constant(targets)
+                    next_action_values = tf.reduce_max(self.target_network(next_states), axis=1)
+                    targets = tf.where(terminals, rewards, rewards + self.discount_factor * next_action_values)
                     target_generation_chkpt = perf_counter()
+
                     with tf.GradientTape() as tape:
-                        preds = self.q_network(sampled_transitions[0])
+                        preds = self.q_network(current_states)
                         batch_nums = tf.range(0, limit=preds.get_shape().as_list()[0])
-                        indices = tf.stack((batch_nums, sampled_transitions[1]), axis=1)
+                        indices = tf.stack((batch_nums, actions), axis=1)
                         new_preds = tf.gather_nd(preds, indices)
                         loss = self.loss_fn(targets, new_preds)
                     loss_calculation_chkpt = perf_counter()
@@ -149,17 +156,17 @@ class DeepQLearning(DriverAlgorithm):
                     self.q_network.optimizer.apply_gradients(zip(grads, self.q_network.trainable_weights))
                     gradient_application_chkpt = perf_counter()
                     current_state = next_state
-                    print("="*100)
-                    print("action selection: ", action_selection_chkpt - learn_start_chkpt)
-                    print("action application: ", action_application_chkpt - action_selection_chkpt)
-                    print("action observation: ", action_observation_chkpt - action_application_chkpt)
-                    print("transition insertion: ", transition_insertion_chkpt - action_observation_chkpt)
-                    print("metric step insertion: ", metric_step_insertion_chkpt - transition_insertion_chkpt)
-                    print("mini batch transition sampling: ", transition_sampling_chkpt - metric_step_insertion_chkpt)
-                    print("target generation: ", target_generation_chkpt - transition_sampling_chkpt)
-                    print("loss pass: ", loss_calculation_chkpt - target_generation_chkpt)
-                    print("gradient calculation: ", gradient_calculation_chkpt - loss_calculation_chkpt)
-                    print("gradient application: ", gradient_application_chkpt - gradient_calculation_chkpt)
+                    # print("=" * 100)
+                    # print("action selection: ", action_selection_chkpt - learn_start_chkpt)
+                    # print("action application: ", action_application_chkpt - action_selection_chkpt)
+                    # print("action observation: ", action_observation_chkpt - action_application_chkpt)
+                    # print("transition insertion: ", transition_insertion_chkpt - action_observation_chkpt)
+                    # print("metric step insertion: ", metric_step_insertion_chkpt - transition_insertion_chkpt)
+                    # print("mini batch transition sampling: ", transition_sampling_chkpt - metric_step_insertion_chkpt)
+                    # print("target generation: ", target_generation_chkpt - transition_sampling_chkpt)
+                    # print("loss pass: ", loss_calculation_chkpt - target_generation_chkpt)
+                    # print("gradient calculation: ", gradient_calculation_chkpt - loss_calculation_chkpt)
+                    # print("gradient application: ", gradient_application_chkpt - gradient_calculation_chkpt)
 
                 self.step_counter += 1
                 if self.step_counter % self.update_target_after == 0:
@@ -173,20 +180,20 @@ class DeepQLearning(DriverAlgorithm):
 
             metric.save()
             episode_end_chkpt = perf_counter()
-            print("Episode Completion: ", episode_end_chkpt - episode_start_chkpt)
+            # print("Episode Completion: ", episode_end_chkpt - episode_start_chkpt)
         # Training End metric data storage
 
     def get_action(self, state, explore=0.0):
-        action_ = self.q_network(tf.constant([state]))[0]
-        action = tf.argmax(action_).numpy()
-        explored = False
+        action_ = self.q_network(tf.expand_dims(state, axis=0))[0]
+        action = tf.argmax(action_)
+        explored = tf.constant(False)
         if tf.random.uniform(shape=(), maxval=1) < explore:
             action = self.interpreter.get_randomized_action()
-            explored = True
-        return action, action_[action].numpy(), explored  # Action, Value for Action, explored or not
+            explored = tf.constant(True)
+        return action, action_[action], explored  # Action, Value for Action, explored or not
 
     def get_values(self, states):
-        return tf.reduce_max(self.q_network(tf.constant(states)), axis=1)
+        return tf.reduce_max(self.q_network(states), axis=1)
 
     def save(self, path=""):
         self.q_network.save(os.path.join(path, "q_network"))
