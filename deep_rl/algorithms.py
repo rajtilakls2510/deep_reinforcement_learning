@@ -4,6 +4,7 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model, clone_model
 from tqdm import tqdm
 from deep_rl.replaybuffers import ExperienceReplay
+from time import perf_counter
 
 
 class DriverAlgorithm:
@@ -103,15 +104,20 @@ class DeepQLearning(DriverAlgorithm):
             metric.on_episode_begin()
 
             self.interpreter.reset()
+            episode_start_chkpt = perf_counter()
             current_state, _, _ = self.interpreter.observe()
             while not self.interpreter.is_episode_finished():
+                learn_start_chkpt = perf_counter()
                 action, action_value, explored = self.get_action(current_state, explore=self.exploration)
+                action_selection_chkpt = perf_counter()
                 self.interpreter.take_action(action)
+                action_application_chkpt = perf_counter()
                 next_state, reward, _ = self.interpreter.observe()
+                action_observation_chkpt = perf_counter()
 
                 self.replay_buffer.insert_transition(
                     [current_state, action, reward, next_state, self.interpreter.is_episode_finished()])
-
+                transition_insertion_chkpt = perf_counter()
                 metric.on_episode_step(
                     {
                         "action_value": action_value,
@@ -120,26 +126,40 @@ class DeepQLearning(DriverAlgorithm):
                         "explored": explored
                     }
                 )
-
+                metric_step_insertion_chkpt = perf_counter()
                 if self.step_counter % self.learn_after_steps == 0:
                     sampled_transitions = self.replay_buffer.sample_batch_transitions(batch_size=batch_size)
+                    transition_sampling_chkpt = perf_counter()
 
                     next_action_values = tf.reduce_max(self.target_network(sampled_transitions[3]), axis=1)
                     targets = []
                     for r, nav, term in zip(sampled_transitions[2], next_action_values, sampled_transitions[4]):
                         targets.append([(r + self.discount_factor * nav).numpy() if not term else r.numpy()])
                     targets = tf.constant(targets)
+                    target_generation_chkpt = perf_counter()
                     with tf.GradientTape() as tape:
                         preds = self.q_network(sampled_transitions[0])
                         batch_nums = tf.range(0, limit=preds.get_shape().as_list()[0])
                         indices = tf.stack((batch_nums, sampled_transitions[1]), axis=1)
                         new_preds = tf.gather_nd(preds, indices)
                         loss = self.loss_fn(targets, new_preds)
-
+                    loss_calculation_chkpt = perf_counter()
                     grads = tape.gradient(loss, self.q_network.trainable_weights)
+                    gradient_calculation_chkpt = perf_counter()
                     self.q_network.optimizer.apply_gradients(zip(grads, self.q_network.trainable_weights))
-
+                    gradient_application_chkpt = perf_counter()
                     current_state = next_state
+                    print("="*100)
+                    print("action selection: ", action_selection_chkpt - learn_start_chkpt)
+                    print("action application: ", action_application_chkpt - action_selection_chkpt)
+                    print("action observation: ", action_observation_chkpt - action_application_chkpt)
+                    print("transition insertion: ", transition_insertion_chkpt - action_observation_chkpt)
+                    print("metric step insertion: ", metric_step_insertion_chkpt - transition_insertion_chkpt)
+                    print("mini batch transition sampling: ", transition_sampling_chkpt - metric_step_insertion_chkpt)
+                    print("target generation: ", target_generation_chkpt - transition_sampling_chkpt)
+                    print("loss pass: ", loss_calculation_chkpt - target_generation_chkpt)
+                    print("gradient calculation: ", gradient_calculation_chkpt - loss_calculation_chkpt)
+                    print("gradient application: ", gradient_application_chkpt - gradient_calculation_chkpt)
 
                 self.step_counter += 1
                 if self.step_counter % self.update_target_after == 0:
@@ -152,6 +172,8 @@ class DeepQLearning(DriverAlgorithm):
                     self.exploration = self.min_exploration
 
             metric.save()
+            episode_end_chkpt = perf_counter()
+            print("Episode Completion: ", episode_end_chkpt - episode_start_chkpt)
         # Training End metric data storage
 
     def get_action(self, state, explore=0.0):
