@@ -9,7 +9,7 @@ from deep_rl.analytics import AvgTotalReward
 from lunarlander.interface import LunarLanderTerminal, LunarLanderInterpreter
 
 interpreter = LunarLanderInterpreter(LunarLanderTerminal(gym.make("LunarLander-v2")))
-AGENT_PATH = "lunar_lander_agent4"
+AGENT_PATH = "lunar_lander_agent2"
 
 # Q Network
 input = Input(shape=(8,))
@@ -38,7 +38,7 @@ driver_algorithm = DeepQLearning(
 )
 
 agent = Agent(interpreter, driver_algorithm)
-for i in range(1_00):
+for i in range(2_00):
     print("Training Iteration:", i)
     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
     agent.save(AGENT_PATH)

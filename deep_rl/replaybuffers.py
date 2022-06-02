@@ -43,7 +43,7 @@ class ExperienceReplay(ReplayBuffer):
         self.current_index += 1
 
     def sample_batch_transitions(self, batch_size=16):
-        buf_len = self.current_states.size().numpy()
+        buf_len = self.current_states.size()
         if buf_len <= batch_size:
             sampled_indices = tf.random.uniform(shape=(buf_len,), maxval=buf_len, dtype=tf.int32)
         else:
