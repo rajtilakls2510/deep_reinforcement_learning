@@ -7,7 +7,7 @@ import numpy as np
 
 interpreter = LunarLanderInterpreter(LunarLanderTerminal(gym.make("LunarLander-v2")))
 
-AGENT_PATH = "lunar_lander_agent4"
+AGENT_PATH = "lunar_lander_agent"
 
 driver_algo = DeepQLearning()
 agent = Agent(interpreter, driver_algo)
@@ -37,14 +37,14 @@ def put_episodic_data(episode):
 
 actions = ['D', 'L', 'M', 'R']
 for i in range(5):
-    rgb_array = agent.evaluate(episodes=1, exploration=0.0)[0]
+    rgb_array = agent.evaluate(episodes=1, exploration=0.00)[0]
     print("Episode:", i + 1, "Length:", len(rgb_array))
     tot_reward = 0
     for step, episode in enumerate(rgb_array):
         put_episodic_data(episode)
         tot_reward += episode[1]
         cv2.imshow("Episode", episode[0])
-        cv2.waitKey(20)
+        cv2.waitKey(10)
     print("Total Reward:", tot_reward)
 interpreter.close()
 cv2.destroyAllWindows()

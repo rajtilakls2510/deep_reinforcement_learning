@@ -22,7 +22,7 @@ class LunarLanderTerminal(Terminal):
 
     def reset(self):
         self.env_finished = False
-        self.state = self.env.reset()
+        self.state = self.env.reset(seed=int(random.uniform(shape=(), minval=0, maxval=1000, dtype=int32).numpy()))
 
 
 class LunarLanderInterpreter(Interpreter):

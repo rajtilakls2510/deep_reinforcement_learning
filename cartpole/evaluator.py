@@ -8,7 +8,7 @@ import numpy as np
 env = gym.make("CartPole-v1")
 interpreter = CartpoleInterpreter(CartpoleTerminal(env))
 
-AGENT_PATH = "cart_pole_agent3"
+AGENT_PATH = "cart_pole_agent"
 
 driver_algo = DeepQLearning()
 agent = Agent(interpreter, driver_algo)
@@ -56,6 +56,6 @@ cv2.destroyAllWindows()
 # rgb_array = agent.evaluate(episodes=5)
 # for i, episode in enumerate(rgb_array):
 #     with imageio.get_writer(os.path.join(AGENT_PATH, "eval", "vid" + str(i) + "_" + str(len(episode)) + ".mp4"),
-#                             fps=30) as video:
+#                             fps=50) as video:
 #         for episode in episode:
 #             video.append_data(episode[0])

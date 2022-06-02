@@ -47,8 +47,8 @@ interpreter.close()
 # Load agent and train (change exploration param)
 # driver_algorithm = DeepQLearning(
 #     learn_after_steps=4,
-#     discount_factor=0.999,
-#     exploration=0.20371654390816973,
+#     discount_factor=0.99,
+#     exploration=0.01,
 #     min_exploration=0.01,
 #     exploration_decay=1.005,
 #     exploration_decay_after=1,
@@ -57,7 +57,7 @@ interpreter.close()
 # )
 # agent = Agent(interpreter, driver_algorithm)
 # agent.load(AGENT_PATH)
-# for i in range(60, 2_00):
+# for i in range(2_00, 2_50):
 #     print("Training Iteration: ", i)
 #     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
 #     agent.save(AGENT_PATH)

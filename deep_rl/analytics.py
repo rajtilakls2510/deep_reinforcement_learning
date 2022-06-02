@@ -78,4 +78,4 @@ class AvgTotalReward(Metric):
             self.random_states = tf.io.parse_tensor(tf.io.read_file(os.path.join(self.path, "random_states.tfw")),
                                                     tf.float32)
         except:
-            print("Random states could not be loaded")
+            print("No Random States found")
