@@ -11,7 +11,7 @@ from tensorflow.keras.optimizers import Adam
 env = gym.make("CartPole-v1")
 interpreter = CartpoleInterpreter(CartpoleTerminal(env))
 
-AGENT_PATH = "cart_pole_agent"
+AGENT_PATH = "cart_pole_agent3"
 
 # Q Network
 
@@ -28,7 +28,7 @@ metric = AvgTotalReward(os.path.join(AGENT_PATH, "train_metric"))
 # # Start training from scratch
 driver_algorithm = DeepQLearning(
     q_net,
-    learn_after_steps=3,
+    learn_after_steps=1,
     replay_size= 1_00_000,
     discount_factor= 0.99,
     exploration=1,

@@ -9,7 +9,7 @@ from deep_rl.analytics import AvgTotalReward
 from lunarlander.interface import LunarLanderTerminal, LunarLanderInterpreter
 
 interpreter = LunarLanderInterpreter(LunarLanderTerminal(gym.make("LunarLander-v2")))
-AGENT_PATH = "lunar_lander_agent2"
+AGENT_PATH = "lunar_lander_agent4"
 
 # Q Network
 input = Input(shape=(8,))

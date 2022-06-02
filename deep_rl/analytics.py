@@ -69,18 +69,13 @@ class AvgTotalReward(Metric):
     # def on_task_end(self, data=None):
 
     def save(self):
-
-        try:
-            pd.DataFrame(self.episodic_data).to_csv(os.path.join(self.path, "episodic_data.csv"), index=False)
-            pickle.dump(self.random_states, open(os.path.join(self.path, "random_states.pkl"), "wb"))
-        except OSError:
-            os.makedirs(self.path)
-            pd.DataFrame(self.episodic_data).to_csv(os.path.join(self.path, "episodic_data.csv"), index=False)
-            pickle.dump(self.random_states, open(os.path.join(self.path, "random_states.pkl"), "wb"))
+        tf.io.write_file(os.path.join(self.path, "random_states.tfw"), tf.io.serialize_tensor(self.random_states))
+        pd.DataFrame(self.episodic_data).to_csv(os.path.join(self.path, "episodic_data.csv"), index=False)
 
     def load(self):
         try:
             self.episodic_data = pd.read_csv(os.path.join(self.path, "episodic_data.csv")).to_dict('list')
-            self.random_states = pickle.load(open(os.path.join(self.path, "random_states.pkl"), "rb"))
+            self.random_states = tf.io.parse_tensor(tf.io.read_file(os.path.join(self.path, "random_states.tfw")),
+                                                    tf.float32)
         except:
-            pass
+            print("Random states could not be loaded")

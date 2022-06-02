@@ -49,17 +49,18 @@ class DriverAlgorithm:
 
     # Return states after following a random policy
     def get_random_states(self, num_states=20):
-        random_states = []
+        random_states = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
         self.interpreter.reset()
         state, _, _ = self.interpreter.observe()
-        while num_states > 0 and not self.interpreter.is_episode_finished():
-            random_states.append(state)
+        i=0
+        while i<num_states and not self.interpreter.is_episode_finished():
             state = tf.convert_to_tensor(state, tf.float32)
+            random_states = random_states.write(i, state)
             action, action_, _ = self.get_action(state)
             self.interpreter.take_action(action.numpy())
             state, _, _ = self.interpreter.observe()
-            num_states -= 1
-        return tf.convert_to_tensor(random_states, tf.float32)
+            i += 1
+        return random_states.stack()
 
     # Return Q values for a list of states
     def get_values(self, states):
@@ -98,7 +99,7 @@ class DeepQLearning(DriverAlgorithm):
         self.exploration_decay_after = exploration_decay_after
         self.discount_factor = discount_factor
         self.update_target_after = update_target_after_steps
-        self.step_counter = 0
+        self.step_counter = 1
 
     def train(self, initial_episode, episodes, metric, batch_size=16):
         metric.load()
@@ -185,10 +186,10 @@ class DeepQLearning(DriverAlgorithm):
 
     def get_action(self, state, explore=0.0):
         action_ = self.q_network(tf.expand_dims(state, axis=0))[0]
-        action = tf.argmax(action_)
+        action = tf.argmax(action_, output_type=tf.int32)
         explored = tf.constant(False)
         if tf.random.uniform(shape=(), maxval=1) < explore:
-            action = self.interpreter.get_randomized_action()
+            action = tf.convert_to_tensor(self.interpreter.get_randomized_action(), tf.int32)
             explored = tf.constant(True)
         return action, action_[action], explored  # Action, Value for Action, explored or not
 

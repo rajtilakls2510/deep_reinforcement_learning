@@ -31,7 +31,7 @@ class LunarLanderInterpreter(Interpreter):
         super(LunarLanderInterpreter, self).__init__(terminal)
 
     def get_randomized_action(self):
-        return random.uniform(shape=(), maxval=4, dtype=int32).numpy()
+        return random.uniform(shape=(), maxval=4, dtype=int32)
 
 
 class LunarLanderImageInterpreter(LunarLanderInterpreter):

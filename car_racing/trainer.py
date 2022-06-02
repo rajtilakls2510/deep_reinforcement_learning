@@ -41,12 +41,10 @@ driver_algorithm = DeepQLearning(
 )
 
 agent = Agent(interpreter, driver_algorithm)
-agent.train(episodes=1, metric=metric, batch_size=64)
-agent.save(AGENT_PATH)
-# for i in range(1_00):
-#     print("Training Iteration:", i)
-#     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
-#     agent.save(AGENT_PATH)
+for i in range(1_00):
+    print("Training Iteration:", i)
+    agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
+    agent.save(AGENT_PATH)
 interpreter.close()
 
 # Load agent and train (change exploration param)
