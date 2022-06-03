@@ -4,12 +4,12 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 
 from deep_rl.agent import Agent
-from deep_rl.algorithms import DeepQLearning
+from deep_rl.algorithms import DoubleDeepQLearning
 from deep_rl.analytics import AvgTotalReward
 from mountain_car.interface import MountainCarInterpreter, MountainCarTerminal
 
 interpreter = MountainCarInterpreter(MountainCarTerminal(gym.make("MountainCar-v0")))
-AGENT_PATH = "mountain_car_agent"
+AGENT_PATH = "mountain_car_agent2"
 # Q Network
 input = Input(shape=(2,))
 x = Dense(32, activation="relu")(input)
@@ -20,7 +20,7 @@ q_network.compile(optimizer=optimizer)
 
 metric = AvgTotalReward(os.path.join(AGENT_PATH,"train_metric"))
 
-driver_algorithm = DeepQLearning(
+driver_algorithm = DoubleDeepQLearning(
     q_network,
     learn_after_steps=4,
     replay_size=1_00_000,
@@ -33,14 +33,14 @@ driver_algorithm = DeepQLearning(
 )
 agent = Agent(interpreter, driver_algorithm)
 # 1_000 episodes
-for i in range(1_00):
+for i in range(1_70):
     print("Training Iteration:",i)
     agent.train(initial_episode=10 * i, episodes = 10, metric= metric)
     agent.save(AGENT_PATH)
 interpreter.close()
 
 # Load agent and train (change exploration param)
-# driver_algorithm = DeepQLearning(
+# driver_algorithm = DoubleDeepQLearning(
 #     learn_after_steps=4,
 #     replay_size=1_00_000,
 #     discount_factor=0.99,
@@ -53,7 +53,7 @@ interpreter.close()
 #
 # agent = Agent(interpreter, driver_algorithm)
 # agent.load(AGENT_PATH)
-# for i in range(1_00, 1_50):
+# for i in range(1_90, 2_00):
 #     print("Training Iteration: ", i)
 #     agent.train(initial_episode=10 * i, episodes=10, metric=metric)
 #     agent.save(AGENT_PATH)

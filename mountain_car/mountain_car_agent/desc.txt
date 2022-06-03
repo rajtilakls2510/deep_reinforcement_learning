@@ -1,0 +1,18 @@
+Reward: Same as environment
+
+Training:
+- Algorithm: DeepQLearning
+- Episodes: 1500
+- Batch Size: 64
+- Replay Size: 1_00_000
+- Exploration: 1
+- Exploration Decay: 1.005
+- Min Exploration: 0.01
+- Exploration Decay After: 1
+- Discount Factor: 0.99
+- Update Target Network Parameters After: 1_000 steps
+- Optimizer: Adam
+- Learning Rate: 0.001
+
+Results:
+Training satisfactory. Agent is able to ultimately reach the goal.
