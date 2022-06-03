@@ -38,7 +38,7 @@ driver_algorithm = DeepQLearning(
     update_target_after_steps=1_000
 )
 agent = Agent(interpreter, driver_algorithm)
-for i in range(5_0):
+for i in range(1_0):
     print("Training Iteration: ", i)
     agent.train(initial_episode=100 * i, episodes=100, batch_size=64, metric=metric)
     agent.save(AGENT_PATH)
