@@ -3,28 +3,7 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="\cartpole\cart_pole_agent2\train_metric\episodic_data.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\cartpole\cart_pole_agent\train_metric\episodic_data.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\lunarlander\lunar_lander_agent2\train_metric\episodic_data.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\lunarlander\lunar_lander_agent3\train_metric\episodic_data.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

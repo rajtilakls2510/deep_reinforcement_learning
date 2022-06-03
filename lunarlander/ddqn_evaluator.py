@@ -56,7 +56,7 @@ cv2.destroyAllWindows()
 #     pass
 # rgb_array = agent.evaluate(episodes=5)
 # for i, episode in enumerate(rgb_array):
-#     with imageio.get_writer(os.path.join(AGENT_PATH, "eval", "vid1000_" + str(i) + "_" + str(len(episode)) + ".mp4"),
+#     with imageio.get_writer(os.path.join(AGENT_PATH, "eval", "vid_" + str(i) + "_" + str(len(episode)) + ".mp4"),
 #                             fps=50) as video:
-#         for episode in episode:
-#             video.append_data(episode[0])
+#         for ep in episode:
+#             video.append_data(ep[0])

@@ -1,4 +1,4 @@
-import os, pickle
+import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model, clone_model
@@ -196,7 +196,7 @@ class DeepQLearning(DriverAlgorithm):
         self.replay_buffer.load(os.path.join(path, "replay"))
 
 
-class DoubleDeepQLearning(DriverAlgorithm):
+class DoubleDeepQLearning(DeepQLearning):
 
     def __init__(self, q_network: tf.keras.Model = None,
                  loss=tf.keras.losses.Huber(),
@@ -205,113 +205,26 @@ class DoubleDeepQLearning(DriverAlgorithm):
                  discount_factor=0.9, exploration=0.1, min_exploration=0.0, exploration_decay=1.1,
                  exploration_decay_after=100,
                  update_target_after_steps=100):
-        super().__init__()
-        self.q_network = q_network
-        if self.q_network is None:
-            self.target_network = None
-        else:
-            self.target_network = clone_model(self.q_network)
-        self.replay_buffer = ExperienceReplay(replay_size)
-        self.loss_fn = loss
-        self.learn_after_steps = learn_after_steps
-        self.exploration = exploration
-        self.min_exploration = min_exploration
-        self.exploration_decay = exploration_decay
-        self.exploration_decay_after = exploration_decay_after
-        self.discount_factor = discount_factor
-        self.update_target_after = update_target_after_steps
-        self.step_counter = 0
+        super().__init__(q_network, loss, learn_after_steps, replay_size, discount_factor, exploration, min_exploration,
+                         exploration_decay, exploration_decay_after, update_target_after_steps)
 
-    def train(self, initial_episode, episodes, metric, batch_size=16):
-        metric.load()
-        metric.on_task_begin()
-        for i in tqdm(range(initial_episode, initial_episode + episodes), desc="Episode"):
+    @tf.function
+    def _train_step(self, current_states, actions, rewards, next_states, terminals, batch_size):
+        next_actions = tf.argmax(self.q_network(next_states), axis=1, output_type=tf.int32)
+        next_action_values = self.target_network(next_states)
+        batch_nums = tf.range(0, limit=batch_size)
+        indices = tf.stack((batch_nums, next_actions), axis=1)
+        next_action_values = tf.gather_nd(next_action_values, indices)
+        targets = tf.where(terminals, rewards, rewards + self.discount_factor * next_action_values)
 
-            metric.on_episode_begin()
-
-            self.interpreter.reset()
-            current_state, _, _ = self.interpreter.observe()
-            while not self.interpreter.is_episode_finished():
-                action, action_value, explored = self.get_action(current_state, explore=self.exploration)
-                self.interpreter.take_action(action)
-                next_state, reward, _ = self.interpreter.observe()
-
-                self.replay_buffer.insert_transition(
-                    [current_state, action, reward, next_state, self.interpreter.is_episode_finished()])
-
-                metric.on_episode_step(
-                    {
-                        "action_value": action_value,
-                        "action": action,
-                        "reward": reward,
-                        "explored": explored
-                    }
-                )
-                self.step_counter += 1
-                if self.step_counter % self.learn_after_steps == 0:
-                    sampled_transitions = self.replay_buffer.sample_batch_transitions(batch_size=batch_size)
-
-                    # next_action_values = tf.reduce_max(self.target_network(sampled_transitions[3]), axis=1)
-
-                    next_actions = tf.argmax(self.q_network(sampled_transitions[3]), axis=1, output_type=tf.int32)
-                    next_action_values = self.target_network(sampled_transitions[3])
-                    batch_nums = tf.range(0, limit=next_action_values.get_shape().as_list()[0])
-                    indices = tf.stack((batch_nums, next_actions), axis=1)
-                    next_action_values = tf.gather_nd(next_action_values, indices)
-                    targets = []
-                    for r, nav, term in zip(sampled_transitions[2], next_action_values, sampled_transitions[4]):
-                        targets.append([(r + self.discount_factor * nav).numpy() if not term else r.numpy()])
-                    targets = tf.constant(targets)
-
-                    with tf.GradientTape() as tape:
-                        preds = self.q_network(sampled_transitions[0])
-                        batch_nums = tf.range(0, limit=preds.get_shape().as_list()[0])
-                        indices = tf.stack((batch_nums, sampled_transitions[1]), axis=1)
-                        new_preds = tf.gather_nd(preds, indices)
-                        loss = self.loss_fn(targets, new_preds)
-
-                    grads = tape.gradient(loss, self.q_network.trainable_weights)
-                    self.q_network.optimizer.apply_gradients(zip(grads, self.q_network.trainable_weights))
-
-                    current_state = next_state
-
-                if self.step_counter % self.update_target_after == 0:
-                    self.target_network.set_weights(self.q_network.get_weights())
-
-            metric.on_episode_end({"episode": i, "exploration": self.exploration})
-            if (i + 1) % self.exploration_decay_after == 0:
-                self.exploration /= self.exploration_decay
-                if self.exploration < self.min_exploration:
-                    self.exploration = self.min_exploration
-
-            metric.save()
-        # Training End metric data storage
-
-    def get_action(self, state, explore=0.0):
-        action_ = self.q_network(tf.constant([state]))[0]
-        action = tf.argmax(action_).numpy()
-        explored = False
-        if tf.random.uniform(shape=(), maxval=1) < explore:
-            action = self.interpreter.get_randomized_action()
-            explored = True
-        return action, action_[action].numpy(), explored  # Action, Value for Action, explored or not
-
-    def get_values(self, states):
-        return tf.reduce_max(self.q_network(tf.constant(states)), axis=1)
-
-    def save(self, path=""):
-        self.q_network.save(os.path.join(path, "q_network"))
-        self.target_network.save(os.path.join(path, "target_network"))
-        self.replay_buffer.save(os.path.join(path, "replay"))
-
-    def load(self, path=""):
-        self.q_network = load_model(os.path.join(path, "q_network"))
-        try:
-            self.target_network = load_model(os.path.join(path, "target_network"))
-        except:
-            if self.q_network is not None:
-                self.target_network = clone_model(self.q_network)
-        self.replay_buffer.load(os.path.join(path, "replay"))
+        with tf.GradientTape() as tape:
+            preds = self.q_network(current_states)
+            batch_nums = tf.range(0, limit=batch_size)
+            indices = tf.stack((batch_nums, actions), axis=1)
+            new_preds = tf.gather_nd(preds, indices)
+            loss = self.loss_fn(targets, new_preds)
+        grads = tape.gradient(loss, self.q_network.trainable_weights)
+        self.q_network.optimizer.apply_gradients(zip(grads, self.q_network.trainable_weights))
 
 
 class NeuralSarsa(DriverAlgorithm):
