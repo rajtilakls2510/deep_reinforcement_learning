@@ -8,7 +8,7 @@ from deep_rl.algorithms import DeepQLearning
 from deep_rl.analytics import AvgTotalReward
 from car_racing.interface import CarRacingTerminal, CarRacingInterpreter
 
-interpreter = CarRacingInterpreter(CarRacingTerminal(gym.make("CarRacingDiscrete-v1")))
+interpreter = CarRacingInterpreter(CarRacingTerminal(gym.make("CarRacingDiscrete-v1")), frame_buffer_size=3)
 AGENT_PATH = "car_racing_agent"
 
 # Q Network
@@ -34,10 +34,10 @@ driver_algorithm = DeepQLearning(
     discount_factor=0.99,
     exploration=1,
     min_exploration=0.01,
-    exploration_decay=1.005,
+    exploration_decay=1.01,
     exploration_decay_after=1,
     update_target_after_steps=1_000,
-    replay_size=1_00_000
+    replay_size=10_000
 )
 
 agent = Agent(interpreter, driver_algorithm)

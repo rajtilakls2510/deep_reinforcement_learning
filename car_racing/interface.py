@@ -37,5 +37,5 @@ class CarRacingInterpreter(Interpreter):
         return random.uniform(shape=(), maxval=5, dtype=int32)
 
     def state_preprocessing(self, state):
-        self.frame_buffer = concat([self.frame_buffer[:,:,3:], self.rescale(state)], axis=-1)
+        self.frame_buffer = concat([self.frame_buffer[:, :, 3:], self.rescale(state)], axis=-1)
         return self.frame_buffer
