@@ -65,7 +65,7 @@ class DriverAlgorithm:
 
     # Return Q values for a list of states
     def get_values(self, states):
-        pass
+        return tf.constant(0)
 
     # Saves restorable parameters like networks and metrics
     def save(self, path=""):
@@ -225,6 +225,175 @@ class DoubleDeepQLearning(DeepQLearning):
             loss = self.loss_fn(targets, new_preds)
         grads = tape.gradient(loss, self.q_network.trainable_weights)
         self.q_network.optimizer.apply_gradients(zip(grads, self.q_network.trainable_weights))
+
+
+class DriverAlgorithmContinuous(DriverAlgorithm):
+
+    # Generated episodes and returns list frames for each episode
+    def infer(self, episodes, metric, exploration=0.0):
+        metric.on_task_begin()
+        episode_data = []
+        for _ in range(episodes):
+            current_episode = []
+            metric.on_episode_begin()
+            self.interpreter.reset()
+            state, reward, frame = self.interpreter.observe()
+            state = tf.convert_to_tensor(state, tf.float32)
+            while not self.interpreter.is_episode_finished():
+                action = self.get_action(state, exploration)
+                self.interpreter.take_action(action.numpy())
+                state, reward, frame = self.interpreter.observe()
+                state = tf.convert_to_tensor(state, tf.float32)
+                values = self.get_values(tf.expand_dims(state, axis=0))[0]
+                current_episode.append(
+                    [frame, reward, state.numpy(), action.numpy(), values.numpy()])
+                metric.on_episode_step()
+            episode_data.append(current_episode)
+            metric.on_episode_end()
+        metric.on_task_end()
+        return np.array(episode_data)
+
+    # Returns the action space
+    def get_action(self, state, explore=False):
+        return tf.constant(0)  # Return: Action
+
+    # Return states after following a random policy
+    def get_random_states(self, num_states=20):
+        random_states = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
+        self.interpreter.reset()
+        state, _, _ = self.interpreter.observe()
+        i = 0
+        while i < num_states and not self.interpreter.is_episode_finished():
+            state = tf.convert_to_tensor(state, tf.float32)
+            random_states = random_states.write(i, state)
+            action = self.get_action(state)
+            self.interpreter.take_action(action.numpy())
+            state, _, _ = self.interpreter.observe()
+            i += 1
+        return random_states.stack()
+
+
+class DeepDPG(DriverAlgorithmContinuous):
+
+    def __init__(self, actor_network: tf.keras.Model = None, critic_network: tf.keras.Model = None, learn_after_steps=1,
+                 replay_size=1000, discount_factor=0.9, tau=0.001):
+        super().__init__()
+        self.actor_network = actor_network
+        self.critic_network = critic_network
+        if self.actor_network is None:
+            self.actor_target_network = None
+        else:
+            self.actor_target_network = clone_model(self.actor_network)
+        if self.critic_network is None:
+            self.critic_target_network = None
+        else:
+            self.critic_target_network = clone_model(self.critic_network)
+
+        self.learn_after_steps = learn_after_steps
+        self.replay_buffer = ExperienceReplay(replay_size, continuous=True)
+        self.discount_factor = tf.convert_to_tensor(discount_factor)
+        self.tau = tf.convert_to_tensor(tau)
+        self.step_counter = 1
+        self.critic_loss = tf.keras.losses.MeanSquaredError()
+
+    @tf.function
+    def _train_step(self, current_states, actions, rewards, next_states):
+        targets = rewards + self.discount_factor * self.critic_target_network(
+            [next_states, self.actor_target_network(next_states)])
+
+        with tf.GradientTape() as critic_tape:
+            critic_value = self.critic_network([current_states, actions])
+            critic_loss = self.critic_loss(targets, critic_value)
+
+        critic_grads = critic_tape.gradient(critic_loss, self.critic_network.trainable_weights)
+        self.critic_network.optimizer.apply_gradients(zip(critic_grads, self.critic_network.trainable_weights))
+
+        with tf.GradientTape() as actor_tape:
+            critic_actor_value = self.critic_network([current_states, self.actor_network(current_states)])
+            actor_loss = -tf.math.reduce_mean(critic_actor_value)
+
+        actor_grads = actor_tape.gradient(actor_loss, self.actor_network.trainable_weights)
+        self.actor_network.optimizer.apply_gradients(zip(actor_grads, self.actor_network.trainable_weights))
+
+    @tf.function
+    def update_targets(self):
+        for (target_w, w) in zip(self.actor_target_network.trainable_weights, self.actor_network.trainable_weights):
+            target_w.assign(self.tau * w + (1 - self.tau) * target_w)
+        for (target_w, w) in zip(self.critic_target_network.trainable_weights, self.critic_network.trainable_weights):
+            target_w.assign(self.tau * w + (1 - self.tau) * target_w)
+
+    def train(self, initial_episode, episodes, metric, batch_size=16):
+        metric.load()
+        metric.on_task_begin()
+        for i in tqdm(range(initial_episode, initial_episode + episodes), desc="Episode"):
+
+            metric.on_episode_begin()
+
+            self.interpreter.reset()
+            episode_start_chkpt = perf_counter()
+            current_state, _, _ = self.interpreter.observe()
+            current_state = tf.convert_to_tensor(current_state, tf.float32)
+            while not self.interpreter.is_episode_finished():
+                action = self.get_action(current_state, explore=True)
+                self.interpreter.take_action(action.numpy())
+                next_state, reward, _ = self.interpreter.observe()
+                next_state = tf.convert_to_tensor(next_state, tf.float32)
+                reward = tf.convert_to_tensor(reward, tf.float32)
+
+                self.replay_buffer.insert_transition(
+                    [current_state, action, reward, next_state,
+                     tf.convert_to_tensor(self.interpreter.is_episode_finished())])
+                current_state = next_state
+                metric.on_episode_step(
+                    {
+                        "action": action.numpy(),
+                        "reward": reward.numpy()
+                    }
+                )
+
+                if self.step_counter % self.learn_after_steps == 0:
+                    current_states, actions, rewards, next_states, _ = self.replay_buffer.sample_batch_transitions(
+                        batch_size=batch_size)
+                    if current_states.shape[0] >= batch_size:
+                        self._train_step(current_states, actions, rewards, next_states)
+                        self.update_targets()
+                self.step_counter += 1
+            metric.on_episode_end({"episode": i})
+            metric.save()
+            episode_end_chkpt = perf_counter()
+            # print("Episode Completion: ", episode_end_chkpt - episode_start_chkpt)
+        # Training End metric data storage
+
+    def get_action(self, state, explore=False):
+        action = self.actor_network(tf.expand_dims(state, axis=0))[0]
+        if explore:
+            action += self.interpreter.get_randomized_action()
+        return action
+
+    def get_values(self, states):
+        return self.critic_network([states, self.actor_network(states)])
+
+    def save(self, path=""):
+        self.actor_network.save(os.path.join(path, "actor_network"))
+        self.actor_target_network.save(os.path.join(path, "actor_target_network"))
+        self.critic_network.save(os.path.join(path, "critic_network"))
+        self.critic_target_network.save(os.path.join(path, "critic_target_network"))
+        self.replay_buffer.save(os.path.join(path, "replay"))
+
+    def load(self, path=""):
+        self.actor_network = load_model(os.path.join(path, "actor_network"))
+        self.critic_network = load_model(os.path.join(path, "critic_network"))
+        try:
+            self.actor_target_network = load_model(os.path.join(path, "actor_target_network"))
+        except:
+            if self.actor_network is not None:
+                self.actor_target_network = clone_model(self.actor_network)
+        try:
+            self.critic_target_network = load_model(os.path.join(path, "critic_target_network"))
+        except:
+            if self.critic_network is not None:
+                self.critic_target_network = clone_model(self.critic_network)
+        self.replay_buffer.load(os.path.join(path, "replay"))
 
 
 class NeuralSarsa(DriverAlgorithm):

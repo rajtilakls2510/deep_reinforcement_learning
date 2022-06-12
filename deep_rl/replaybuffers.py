@@ -20,11 +20,13 @@ class ReplayBuffer:
 
 class ExperienceReplay(ReplayBuffer):
 
-    def __init__(self, max_transitions=1000):
+    def __init__(self, max_transitions=1000, continuous=False):
         self.max_transitions = max_transitions
         # self.buffer = []
         self.current_states = tf.TensorArray(tf.float32, size=0, dynamic_size=True, clear_after_read=False)
         self.actions = tf.TensorArray(tf.int32, size=0, dynamic_size=True, clear_after_read=False)
+        if continuous:
+            self.actions = tf.TensorArray(tf.float32, size=0, dynamic_size=True, clear_after_read=False)
         self.rewards = tf.TensorArray(tf.float32, size=0, dynamic_size=True, clear_after_read=False)
         self.next_states = tf.TensorArray(tf.float32, size=0, dynamic_size=True, clear_after_read=False)
         self.terminals = tf.TensorArray(tf.bool, size=0, dynamic_size=True, clear_after_read=False)
