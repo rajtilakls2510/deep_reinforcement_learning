@@ -22,11 +22,12 @@ class ExperienceReplay(ReplayBuffer):
 
     def __init__(self, max_transitions=1000, continuous=False):
         self.max_transitions = max_transitions
-        # self.buffer = []
+        self.continuous = continuous
         self.current_states = tf.TensorArray(tf.float32, size=0, dynamic_size=True, clear_after_read=False)
-        self.actions = tf.TensorArray(tf.int32, size=0, dynamic_size=True, clear_after_read=False)
-        if continuous:
+        if self.continuous:
             self.actions = tf.TensorArray(tf.float32, size=0, dynamic_size=True, clear_after_read=False)
+        else:
+            self.actions = tf.TensorArray(tf.int32, size=0, dynamic_size=True, clear_after_read=False)
         self.rewards = tf.TensorArray(tf.float32, size=0, dynamic_size=True, clear_after_read=False)
         self.next_states = tf.TensorArray(tf.float32, size=0, dynamic_size=True, clear_after_read=False)
         self.terminals = tf.TensorArray(tf.bool, size=0, dynamic_size=True, clear_after_read=False)
@@ -64,8 +65,13 @@ class ExperienceReplay(ReplayBuffer):
         try:
             current_states = self.current_states.unstack(
                 tf.io.parse_tensor(tf.io.read_file(os.path.join(path, "current_states.tfw")), tf.float32))
-            actions = self.actions.unstack(
-                tf.io.parse_tensor(tf.io.read_file(os.path.join(path, "actions.tfw")), tf.int32))
+
+            if self.continuous:
+                actions = self.actions.unstack(
+                    tf.io.parse_tensor(tf.io.read_file(os.path.join(path, "actions.tfw")), tf.float32))
+            else:
+                actions = self.actions.unstack(
+                    tf.io.parse_tensor(tf.io.read_file(os.path.join(path, "actions.tfw")), tf.int32))
             rewards = self.rewards.unstack(
                 tf.io.parse_tensor(tf.io.read_file(os.path.join(path, "rewards.tfw")), tf.float32))
             next_states = self.next_states.unstack(
@@ -79,5 +85,6 @@ class ExperienceReplay(ReplayBuffer):
             self.terminals = terminals
             self.current_index = self.current_states.size().numpy()
             print("Found", self.current_states.size().numpy(), "transitions")
-        except:
+        except Exception as e:
+            print(e)
             print("No Experience Replay found")

@@ -230,7 +230,7 @@ class DoubleDeepQLearning(DeepQLearning):
 class DriverAlgorithmContinuous(DriverAlgorithm):
 
     # Generated episodes and returns list frames for each episode
-    def infer(self, episodes, metric, exploration=0.0):
+    def infer(self, episodes, metric, exploration=False):
         metric.on_task_begin()
         episode_data = []
         for _ in range(episodes):
@@ -284,6 +284,7 @@ class DeepDPG(DriverAlgorithmContinuous):
             self.actor_target_network = None
         else:
             self.actor_target_network = clone_model(self.actor_network)
+
         if self.critic_network is None:
             self.critic_target_network = None
         else:
@@ -298,29 +299,32 @@ class DeepDPG(DriverAlgorithmContinuous):
 
     @tf.function
     def _train_step(self, current_states, actions, rewards, next_states):
-        targets = rewards + self.discount_factor * self.critic_target_network(
+
+        targets = tf.expand_dims(rewards, axis=1) + self.discount_factor * self.critic_target_network(
             [next_states, self.actor_target_network(next_states)])
 
         with tf.GradientTape() as critic_tape:
             critic_value = self.critic_network([current_states, actions])
             critic_loss = self.critic_loss(targets, critic_value)
 
-        critic_grads = critic_tape.gradient(critic_loss, self.critic_network.trainable_weights)
-        self.critic_network.optimizer.apply_gradients(zip(critic_grads, self.critic_network.trainable_weights))
-
-        with tf.GradientTape() as actor_tape:
-            critic_actor_value = self.critic_network([current_states, self.actor_network(current_states)])
-            actor_loss = -tf.math.reduce_mean(critic_actor_value)
+        with tf.GradientTape(persistent=True) as actor_tape:
+            actor_actions = self.actor_network(current_states)
+            critic_actor_value = self.critic_network([current_states, actor_actions])
+            dqda = actor_tape.gradient([critic_actor_value], [actor_actions])[0]
+            target_a = dqda + actor_actions
+            target_a = tf.stop_gradient(target_a)
+            actor_loss = tf.reduce_mean(0.5 * tf.reduce_sum(tf.square(target_a - actor_actions), axis=-1))
 
         actor_grads = actor_tape.gradient(actor_loss, self.actor_network.trainable_weights)
         self.actor_network.optimizer.apply_gradients(zip(actor_grads, self.actor_network.trainable_weights))
+        del actor_tape
+        critic_grads = critic_tape.gradient(critic_loss, self.critic_network.trainable_weights)
+        self.critic_network.optimizer.apply_gradients(zip(critic_grads, self.critic_network.trainable_weights))
 
     @tf.function
-    def update_targets(self):
-        for (target_w, w) in zip(self.actor_target_network.trainable_weights, self.actor_network.trainable_weights):
-            target_w.assign(self.tau * w + (1 - self.tau) * target_w)
-        for (target_w, w) in zip(self.critic_target_network.trainable_weights, self.critic_network.trainable_weights):
-            target_w.assign(self.tau * w + (1 - self.tau) * target_w)
+    def update_targets(self, target_weights, weights, tau):
+        for (target_w, w) in zip(target_weights, weights):
+            target_w.assign(tau * w + (1 - tau) * target_w)
 
     def train(self, initial_episode, episodes, metric, batch_size=16):
         metric.load()
@@ -354,9 +358,14 @@ class DeepDPG(DriverAlgorithmContinuous):
                 if self.step_counter % self.learn_after_steps == 0:
                     current_states, actions, rewards, next_states, _ = self.replay_buffer.sample_batch_transitions(
                         batch_size=batch_size)
+
                     if current_states.shape[0] >= batch_size:
                         self._train_step(current_states, actions, rewards, next_states)
-                        self.update_targets()
+                        self.update_targets(self.actor_target_network.trainable_weights,
+                                            self.actor_network.trainable_weights, self.tau)
+                        self.update_targets(self.critic_target_network.trainable_weights,
+                                            self.critic_network.trainable_weights, self.tau)
+
                 self.step_counter += 1
             metric.on_episode_end({"episode": i})
             metric.save()
@@ -367,7 +376,7 @@ class DeepDPG(DriverAlgorithmContinuous):
     def get_action(self, state, explore=False):
         action = self.actor_network(tf.expand_dims(state, axis=0))[0]
         if explore:
-            action += self.interpreter.get_randomized_action()
+            action += tf.convert_to_tensor(self.interpreter.get_randomized_action(), tf.float32)
         return action
 
     def get_values(self, states):

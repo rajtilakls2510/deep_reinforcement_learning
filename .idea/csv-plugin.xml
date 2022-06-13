@@ -3,13 +3,6 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="\car_racing\car_racing_agent\train_metric\episodic_data.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\cartpole\cart_pole_agent2\train_metric\episodic_data.csv">
           <value>
             <Attribute>
@@ -32,13 +25,6 @@
           </value>
         </entry>
         <entry key="\mountain_car\mountain_car_agent2\train_metric\episodic_data.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\mountain_car_continuous\mountain_car_cont_agent\train_metric\episodic_data.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

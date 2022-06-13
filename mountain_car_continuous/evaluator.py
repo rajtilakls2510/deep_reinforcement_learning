@@ -34,7 +34,7 @@ def put_episodic_data(episode):
 
 
 for i in range(5):
-    rgb_array = agent.evaluate(episodes=1, exploration=0.0)[0]
+    rgb_array = agent.evaluate(episodes=1, exploration=False)[0]
     print("Episode:", i + 1, "Length:", len(rgb_array))
     tot_reward = 0
     for step, episode in enumerate(rgb_array):

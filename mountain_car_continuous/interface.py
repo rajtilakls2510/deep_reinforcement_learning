@@ -33,6 +33,5 @@ class MountainCarContinuousInterpreter(Interpreter):
         return random.normal(shape=(1,), mean=0.0, stddev=0.2, dtype=float32)
 
     def take_action(self, action):
-        action[0] = action[0] if action[0] >= -1 else -1
-        action[0] = action[0] if action[0] <= 1 else 1
+        action = np.clip(action, -1, 1)
         super(MountainCarContinuousInterpreter, self).take_action(action)
