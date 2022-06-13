@@ -34,7 +34,7 @@ def read_data():
             episodic_data = pd.read_csv(AGENT_TRAIN_METRIC_PATH)
         except Exception as e:
             print(e)
-        time.sleep(10)
+        time.sleep(5)
 
 
 t = Thread(target=read_data)
@@ -90,8 +90,8 @@ def plot3(i):
 #         print(e)
 
 
-anim = FuncAnimation(fig1, plot, interval=10000)
-anim2 = FuncAnimation(fig2, plot2, interval=10000)
-anim3 = FuncAnimation(fig3, plot3, interval=10000)
-# anim4 = FuncAnimation(fig4, plot4, interval=10000)
+anim = FuncAnimation(fig1, plot, interval=5000)
+anim2 = FuncAnimation(fig2, plot2, interval=5000)
+anim3 = FuncAnimation(fig3, plot3, interval=5000)
+# anim4 = FuncAnimation(fig4, plot4, interval=5000)
 plt.show()

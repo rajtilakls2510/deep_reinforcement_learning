@@ -43,10 +43,6 @@ class PendulumInterpreter(Interpreter):
         )
         return self.x
 
-    # def state_preprocessing(self, state):
-    #     state[2] = state[2] / 8
-    #     return state
-
     def take_action(self, action):
         action = np.clip(action, -1, 1) * 2
         super(PendulumInterpreter, self).take_action(action)

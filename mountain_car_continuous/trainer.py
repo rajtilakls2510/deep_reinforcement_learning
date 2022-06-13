@@ -1,6 +1,6 @@
 import gym, os
 from tensorflow.keras import Model, Input
-from tensorflow.keras.layers import Dense, Add
+from tensorflow.keras.layers import Dense, Concatenate
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import RandomUniform
 
@@ -17,39 +17,41 @@ state_input = Input(shape=(2,))
 x = Dense(32, activation="relu")(state_input)
 output = Dense(1, activation='tanh', kernel_initializer=RandomUniform(minval=-0.003, maxval=0.003))(x)
 actor_network = Model(inputs=state_input, outputs=output)
-actor_network.compile(optimizer=Adam(learning_rate=0.0001))
+actor_network.compile(optimizer=Adam(learning_rate=0.001))
 
 # Critic Network
 state_input = Input(shape=(2,))
 action_input = Input(shape=(1,))
 x1 = Dense(32, activation='relu')(state_input)
 x2 = Dense(32, activation='relu')(action_input)
-x = Add()([x1, x2])
+x = Concatenate()([x1, x2])
+x = Dense(256, activation="relu")(x)
+x = Dense(256, activation="relu")(x)
 output = Dense(1, activation="linear", kernel_initializer=RandomUniform(minval=-0.003, maxval=0.003))(x)
 critic_network = Model(inputs=[state_input, action_input], outputs=output)
-critic_network.compile(optimizer=Adam(learning_rate=0.001))
+critic_network.compile(optimizer=Adam(learning_rate=0.002))
 
 metric = AvgTotalReward(os.path.join(AGENT_PATH, "train_metric"), continuous=True)
 
 driver_algorithm = DeepDPG(
     actor_network,
     critic_network,
-    learn_after_steps=4,
+    learn_after_steps=1,
     replay_size=1_00_000,
     discount_factor=0.99,
-    tau=0.001
+    tau=0.005
 )
 agent = Agent(interpreter, driver_algorithm)
 # 1_000 episodes
 for i in range(1_00):
     print("Training Iteration:", i)
-    agent.train(initial_episode=10 * i, episodes=10, metric=metric)
+    agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
     agent.save(AGENT_PATH)
 interpreter.close()
 
 # Load agent and train
 # driver_algorithm = DeepDPG(
-#     learn_after_steps=4,
+#     learn_after_steps=1,
 #     replay_size=1_00_000,
 #     discount_factor=0.99,
 #     tau=0.001
@@ -59,6 +61,6 @@ interpreter.close()
 # agent.load(AGENT_PATH)
 # for i in range(4, 1_00):
 #     print("Training Iteration: ", i)
-#     agent.train(initial_episode=10 * i, episodes=10, metric=metric)
+#     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
 #     agent.save(AGENT_PATH)
 # interpreter.close()
