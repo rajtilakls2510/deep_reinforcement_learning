@@ -37,12 +37,9 @@ class Metric:
 
 class AvgTotalReward(Metric):
 
-    def __init__(self, path="", continuous=False):
+    def __init__(self, path=""):
         super(AvgTotalReward, self).__init__(path)
-        self.continuous = continuous
         self.episodic_data = {"episode": [], "length": [], "total_reward": [], "avg_q": [], "exploration": []}
-        if continuous:
-            self.episodic_data = {"episode": [], "length": [], "total_reward": [], "avg_q": []}
         self.current_episode = []
         self.random_states = tf.constant([], dtype=tf.float32)
 
@@ -67,8 +64,7 @@ class AvgTotalReward(Metric):
         self.episodic_data["length"].append(len(self.current_episode))
         self.episodic_data["total_reward"].append(total_reward)
         self.episodic_data["avg_q"].append(tf.reduce_mean(self.driver_algorithm.get_values(self.random_states)).numpy())
-        if not self.continuous:
-            self.episodic_data["exploration"].append(data["exploration"])
+        self.episodic_data["exploration"].append(data["exploration"])
 
     # def on_task_end(self, data=None):
 

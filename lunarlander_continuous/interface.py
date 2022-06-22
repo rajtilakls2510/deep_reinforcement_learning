@@ -2,9 +2,9 @@ from deep_rl.agent import Terminal, Interpreter
 import numpy as np
 
 
-class MountainCarContinuousTerminal(Terminal):
+class LunarLanderContinuousTerminal(Terminal):
     def __init__(self, env):
-        super(MountainCarContinuousTerminal, self).__init__()
+        super(LunarLanderContinuousTerminal, self).__init__()
         self.env = env
         self.env_finished = False
         self.reward = 0
@@ -24,17 +24,17 @@ class MountainCarContinuousTerminal(Terminal):
         self.state = self.env.reset()
 
 
-class MountainCarContinuousInterpreter(Interpreter):
-    def __init__(self, terminal):
-        super(MountainCarContinuousInterpreter, self).__init__(terminal)
+class LunarLanderContinuousInterpreter(Interpreter):
+
+    def __init__(self, terminal: Terminal):
+        super(LunarLanderContinuousInterpreter, self).__init__(terminal)
         self.theta = 0.15
-        self.mean = np.zeros(1)
-        self.std_dev = float(0.2) * np.ones(1)
+        self.mean = np.zeros(2)
+        self.std_dev = float(0.2) * np.ones(2)
         self.dt = 1e-2
         self.x = np.zeros_like(self.mean)
 
     def get_randomized_action(self):
-        # return random.normal(shape=(1,), mean=0.0, stddev=0.2, dtype=float32)
         self.x = (
                 self.x
                 + self.theta * (self.mean - self.x) * self.dt
@@ -44,4 +44,4 @@ class MountainCarContinuousInterpreter(Interpreter):
 
     def take_action(self, action):
         action = np.clip(action, -1, 1)
-        super(MountainCarContinuousInterpreter, self).take_action(action)
+        super(LunarLanderContinuousInterpreter, self).take_action(action)
