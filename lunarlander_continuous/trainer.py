@@ -43,31 +43,12 @@ critic_network.compile(optimizer=Adam(learning_rate=0.001))
 metric = AvgTotalReward(os.path.join(AGENT_PATH, "train_metric"))
 
 # Start training from scratch
-# driver_algorithm = DeepDPG(
-#     actor_network,
-#     critic_network,
-#     learn_after_steps=4,
-#     discount_factor=0.99,
-#     exploration=1.0,
-#     min_exploration=0.01,
-#     exploration_decay=1,
-#     exploration_decay_after=1,
-#     replay_size=1_00_000,
-#     tau=0.001
-# )
-#
-# agent = Agent(interpreter, driver_algorithm)
-# for i in range(2_00):
-#     print("Training Iteration:", i)
-#     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
-#     agent.save(AGENT_PATH)
-# interpreter.close()
-
-# Load agent and train (change exploration param)
 driver_algorithm = DeepDPG(
+    actor_network,
+    critic_network,
     learn_after_steps=4,
     discount_factor=0.99,
-    exploration=1,
+    exploration=1.0,
     min_exploration=0.01,
     exploration_decay=1,
     exploration_decay_after=1,
@@ -76,9 +57,28 @@ driver_algorithm = DeepDPG(
 )
 
 agent = Agent(interpreter, driver_algorithm)
-agent.load(AGENT_PATH)
-for i in range(1_82, 2_00):
-    print("Training Iteration: ", i)
+for i in range(2_00):
+    print("Training Iteration:", i)
     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
     agent.save(AGENT_PATH)
 interpreter.close()
+
+# Load agent and train (change exploration param)
+# driver_algorithm = DeepDPG(
+#     learn_after_steps=4,
+#     discount_factor=0.99,
+#     exploration=1,
+#     min_exploration=0.01,
+#     exploration_decay=1,
+#     exploration_decay_after=1,
+#     replay_size=1_00_000,
+#     tau=0.001
+# )
+#
+# agent = Agent(interpreter, driver_algorithm)
+# agent.load(AGENT_PATH)
+# for i in range(1_82, 2_00):
+#     print("Training Iteration: ", i)
+#     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
+#     agent.save(AGENT_PATH)
+# interpreter.close()
