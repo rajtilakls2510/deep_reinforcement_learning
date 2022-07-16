@@ -24,6 +24,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\lunarlander\lunar_lander_agent4\train_metric\episodic_data.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\lunarlander\lunar_lander_agent\train_metric\episodic_data.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\lunarlander_continuous\lunar_lander_cont_agent\train_metric\episodic_data.csv">
           <value>
             <Attribute>
@@ -32,6 +46,13 @@
           </value>
         </entry>
         <entry key="\mountain_car\mountain_car_agent2\train_metric\episodic_data.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\mountain_car\mountain_car_shaped_agent\train_metric\episodic_data.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

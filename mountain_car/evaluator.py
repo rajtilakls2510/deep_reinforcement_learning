@@ -1,13 +1,13 @@
 import gym, imageio, os
 import cv2
-from interface import MountainCarInterpreter, MountainCarTerminal
+from interface import MountainCarShapedInterpreter, MountainCarTerminal
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepQLearning
 import numpy as np
 
-interpreter = MountainCarInterpreter(MountainCarTerminal(gym.make("MountainCar-v0")))
+interpreter = MountainCarShapedInterpreter(MountainCarTerminal(gym.make("MountainCar-v0")))
 
-AGENT_PATH = "mountain_car_agent"
+AGENT_PATH = "mountain_car_shaped_agent3"
 
 driver_algo = DeepQLearning()
 agent = Agent(interpreter, driver_algo)
@@ -42,7 +42,7 @@ for i in range(5):
         put_episodic_data(episode)
         tot_reward += episode[1]
         cv2.imshow("Episode", episode[0])
-        cv2.waitKey(10)
+        cv2.waitKey(20)
     print("Total Reward:", tot_reward)
 interpreter.close()
 cv2.destroyAllWindows()

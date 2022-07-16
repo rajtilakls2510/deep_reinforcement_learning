@@ -30,3 +30,27 @@ class MountainCarInterpreter(Interpreter):
 
     def get_randomized_action(self):
         return random.uniform(shape=(), maxval=3, dtype=int32).numpy()
+
+
+class MountainCarShapedInterpreter(MountainCarInterpreter):
+
+    def __init__(self, terminal):
+        super(MountainCarShapedInterpreter, self).__init__(terminal)
+        self.prev_shaping = self.terminal.observation()[1][0] + 0.5
+
+    def calculate_reward(self, state, preprocessed_state, reward):
+        # vel = abs(state[1]) * 1_000
+        # if vel < 0.1:
+        #     vel = 0.1
+        #
+        # reward = (state[0] - 0.5) / vel
+        # if state[0] >= 0.5:
+        #     reward = 100.0
+        # return reward
+
+        shaping = state[0] + 0.5
+        reward = (shaping - self.prev_shaping) * abs(state[1]) * 10_000
+        self.prev_shaping = shaping
+        if state[0] >= 0.5:
+            reward = 100
+        return reward

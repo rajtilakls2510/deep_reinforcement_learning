@@ -1,5 +1,5 @@
 from deep_rl.agent import Terminal, Interpreter
-from tensorflow import random, int32
+from tensorflow import random, int32, sqrt, pow, reduce_sum
 
 
 class CartpoleTerminal(Terminal):
@@ -75,3 +75,17 @@ class CartpoleInterpreter(Interpreter):
         if rand < 0.5:
             action = 0
         return action
+
+class CartpoleShapedInterpreter(CartpoleInterpreter):
+
+    def __init__(self, terminal):
+        super().__init__(terminal)
+        self.prev_shape = 0
+
+    def calculate_reward(self, state, preprocessed_state, reward):
+        shape = -sqrt(reduce_sum(pow(preprocessed_state, 2)))
+
+        reward = shape - self.prev_shape
+        self.prev_shape = shape
+        return reward
+
