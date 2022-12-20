@@ -251,7 +251,7 @@ class DriverAlgorithmContinuous(DriverAlgorithm):
             episode_data.append(current_episode)
             metric.on_episode_end()
         metric.on_task_end()
-        return np.array(episode_data)
+        return episode_data
 
     # Returns the action space
     def get_action(self, state, explore=0.0):
