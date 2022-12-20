@@ -1,15 +1,15 @@
 import gym
 import cv2
-from complex_examples.mountain_car_continuous.interface import MountainCarContinuousInterpreter, MountainCarContinuousTerminal
+from mountaincarcont_env_wrappers import MountainCarContinuousEnvironment
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepDPG
 import numpy as np
 
-interpreter = MountainCarContinuousInterpreter(MountainCarContinuousTerminal(gym.make("MountainCarContinuous-v0")))
+env = MountainCarContinuousEnvironment(gym.make("MountainCarContinuous-v0", render_mode = "rgb_array"))
 AGENT_PATH = "mountain_car_cont_agent2"
 
 driver_algo = DeepDPG()
-agent = Agent(interpreter, driver_algo)
+agent = Agent(env, driver_algo)
 agent.load(AGENT_PATH)
 
 
@@ -43,7 +43,7 @@ for i in range(5):
         cv2.imshow("Episode", episode[0])
         cv2.waitKey(10)
     print("Total Reward:", tot_reward)
-interpreter.close()
+env.close()
 cv2.destroyAllWindows()
 
 # Store in video

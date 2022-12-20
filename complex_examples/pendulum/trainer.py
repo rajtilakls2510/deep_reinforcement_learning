@@ -7,9 +7,9 @@ from tensorflow.keras.initializers import RandomUniform
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepDPG
 from deep_rl.analytics import AvgTotalReward
-from interface import PendulumInterpreter, PendulumTerminal
+from pendulum_env_wrapper import PendulumEnvironment
 
-interpreter = PendulumInterpreter(PendulumTerminal(gym.make("Pendulum-v1")))
+env = PendulumEnvironment(gym.make("Pendulum-v1", render_mode = "rgb_array"))
 AGENT_PATH = "pendulum_agent"
 
 # Actor Network
@@ -45,13 +45,13 @@ driver_algorithm = DeepDPG(
     discount_factor=0.99,
     tau=0.005
 )
-agent = Agent(interpreter, driver_algorithm)
+agent = Agent(env, driver_algorithm)
 # 1_000 episodes
 for i in range(2):
     print("Training Iteration:", i)
     agent.train(initial_episode=100 * i, episodes=100, metric=metric, batch_size=64)
     agent.save(AGENT_PATH)
-interpreter.close()
+env.close()
 
 # Load agent and train
 # driver_algorithm = DeepDPG(
@@ -61,10 +61,10 @@ interpreter.close()
 #     tau=0.001
 # )
 #
-# agent = Agent(interpreter, driver_algorithm)
+# agent = Agent(env, driver_algorithm)
 # agent.load(AGENT_PATH)
 # for i in range(4, 1_00):
 #     print("Training Iteration: ", i)
 #     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
 #     agent.save(AGENT_PATH)
-# interpreter.close()
+# env.close()

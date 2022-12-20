@@ -1,15 +1,15 @@
 import gym, imageio, os
 import cv2
-from interface import PendulumInterpreter, PendulumTerminal
+from pendulum_env_wrapper import PendulumEnvironment
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepDPG
 import numpy as np
 
-interpreter = PendulumInterpreter(PendulumTerminal(gym.make("Pendulum-v1")))
+env = PendulumEnvironment(gym.make("Pendulum-v1", render_mode = "rgb_array"))
 AGENT_PATH = "pendulum_agent"
 
 driver_algo = DeepDPG()
-agent = Agent(interpreter, driver_algo)
+agent = Agent(env, driver_algo)
 agent.load(AGENT_PATH)
 
 
@@ -43,7 +43,7 @@ agent.load(AGENT_PATH)
 #         cv2.imshow("Episode", episode[0])
 #         cv2.waitKey(10)
 #     print("Total Reward:", tot_reward)
-# interpreter.close()
+# env.close()
 # cv2.destroyAllWindows()
 
 # Store in video

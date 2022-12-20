@@ -1,16 +1,16 @@
 import gym, imageio, os
 import cv2
-from interface import MountainCarShapedInterpreter, MountainCarTerminal
+from mountaincar_env_wrappers import MountainCarShapedEnvironment
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepQLearning
 import numpy as np
 
-interpreter = MountainCarShapedInterpreter(MountainCarTerminal(gym.make("MountainCar-v0")))
+env = MountainCarShapedEnvironment(gym.make("MountainCar-v0", render_mode = "rgb_array"))
 
 AGENT_PATH = "mountain_car_shaped_agent3"
 
 driver_algo = DeepQLearning()
-agent = Agent(interpreter, driver_algo)
+agent = Agent(env, driver_algo)
 agent.load(AGENT_PATH)
 
 # Live agent play
@@ -44,7 +44,7 @@ for i in range(5):
         cv2.imshow("Episode", episode[0])
         cv2.waitKey(20)
     print("Total Reward:", tot_reward)
-interpreter.close()
+env.close()
 cv2.destroyAllWindows()
 
 # Store in video

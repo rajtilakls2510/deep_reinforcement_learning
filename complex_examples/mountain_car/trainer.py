@@ -6,9 +6,9 @@ from tensorflow.keras.optimizers import Adam
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepQLearning
 from deep_rl.analytics import AvgTotalReward
-from complex_examples.mountain_car.interface import MountainCarInterpreter, MountainCarTerminal
+from mountaincar_env_wrappers import MountainCarEnvironment
 
-interpreter = MountainCarInterpreter(MountainCarTerminal(gym.make("MountainCar-v0")))
+env = MountainCarEnvironment(gym.make("MountainCar-v0", render_mode = "rgb_array"))
 AGENT_PATH = "mountain_car_agent"
 # Q Network
 input = Input(shape=(2,))
@@ -31,13 +31,13 @@ driver_algorithm = DeepQLearning(
     exploration_decay_after=1,
     update_target_after_steps=1_000
 )
-agent = Agent(interpreter, driver_algorithm)
+agent = Agent(env, driver_algorithm)
 # 1_000 episodes
 for i in range(1_00):
     print("Training Iteration:",i)
     agent.train(initial_episode=10 * i, episodes = 10, metric= metric)
     agent.save(AGENT_PATH)
-interpreter.close()
+env.close()
 
 # Load agent and train (change exploration param)
 # driver_algorithm = DeepQLearning(
@@ -51,10 +51,10 @@ interpreter.close()
 #     update_target_after_steps=1_000
 # )
 #
-# agent = Agent(interpreter, driver_algorithm)
+# agent = Agent(env, driver_algorithm)
 # agent.load(AGENT_PATH)
 # for i in range(1_00, 1_50):
 #     print("Training Iteration: ", i)
 #     agent.train(initial_episode=10 * i, episodes=10, metric=metric)
 #     agent.save(AGENT_PATH)
-# interpreter.close()
+# env.close()

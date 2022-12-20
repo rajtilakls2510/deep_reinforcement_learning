@@ -3,14 +3,14 @@ import cv2
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepQLearning
 import numpy as np
-from complex_examples.car_racing.interface import CarRacingTerminal, CarRacingInterpreter
+from carracing_env_wrappers import CarRacingEnvironment
 
-interpreter = CarRacingInterpreter(CarRacingTerminal(gym.make("CarRacingDiscrete-v1")))
+env = CarRacingEnvironment(gym.make("CarRacingDiscrete-v1", render_mode = "rgb_array"))
 
 AGENT_PATH = "car_racing_agent"
 
 driver_algo = DeepQLearning()
-agent = Agent(interpreter, driver_algo)
+agent = Agent(env, driver_algo)
 agent.load(AGENT_PATH)
 
 
@@ -46,7 +46,7 @@ for i in range(5):
         cv2.imshow("Episode", episode[0])
         cv2.waitKey(10)
     print("Total Reward:", tot_reward)
-interpreter.close()
+env.close()
 cv2.destroyAllWindows()
 
 # Store in video

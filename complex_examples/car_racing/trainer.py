@@ -6,9 +6,9 @@ from tensorflow.keras.optimizers import Adam
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepQLearning
 from deep_rl.analytics import AvgTotalReward
-from complex_examples.car_racing.interface import CarRacingTerminal, CarRacingInterpreter
+from carracing_env_wrappers import CarRacingEnvironment
 
-interpreter = CarRacingInterpreter(CarRacingTerminal(gym.make("CarRacingDiscrete-v1")), frame_buffer_size=3)
+env = CarRacingEnvironment(gym.make("CarRacingDiscrete-v1", render_mode = "rgb_array"), frame_buffer_size=3)
 AGENT_PATH = "car_racing_agent"
 
 # Q Network
@@ -40,12 +40,12 @@ driver_algorithm = DeepQLearning(
     replay_size=10_000
 )
 
-agent = Agent(interpreter, driver_algorithm)
+agent = Agent(env, driver_algorithm)
 for i in range(1_00):
     print("Training Iteration:", i)
     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
     agent.save(AGENT_PATH)
-interpreter.close()
+env.close()
 
 # Load agent and train (change exploration param)
 # driver_algorithm = DeepQLearning(
@@ -58,10 +58,10 @@ interpreter.close()
 #     update_target_after_steps=1_000,
 #     replay_size=1_00_000
 # )
-# agent = Agent(interpreter, driver_algorithm)
+# agent = Agent(env, driver_algorithm)
 # agent.load(AGENT_PATH)
 # for i in range(60, 2_00):
 #     print("Training Iteration: ", i)
 #     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
 #     agent.save(AGENT_PATH)
-# interpreter.close()
+# env.close()

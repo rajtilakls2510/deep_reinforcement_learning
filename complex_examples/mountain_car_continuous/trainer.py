@@ -7,9 +7,9 @@ from tensorflow.keras.initializers import RandomUniform
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepDPG
 from deep_rl.analytics import AvgTotalReward
-from complex_examples.mountain_car_continuous.interface import MountainCarContinuousInterpreter, MountainCarContinuousTerminal
+from mountaincarcont_env_wrappers import MountainCarContinuousEnvironment
 
-interpreter = MountainCarContinuousInterpreter(MountainCarContinuousTerminal(gym.make("MountainCarContinuous-v0")))
+env = MountainCarContinuousEnvironment(gym.make("MountainCarContinuous-v0", render_mode = "rgb_array"))
 AGENT_PATH = "mountain_car_cont_agent2"
 
 # Actor Network
@@ -43,13 +43,13 @@ driver_algorithm = DeepDPG(
     exploration_decay=1,
     tau=0.001
 )
-agent = Agent(interpreter, driver_algorithm)
+agent = Agent(env, driver_algorithm)
 # 1_000 episodes
 for i in range(1_00):
     print("Training Iteration:", i)
     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
     agent.save(AGENT_PATH)
-interpreter.close()
+env.close()
 
 # Load agent and train
 # driver_algorithm = DeepDPG(
@@ -59,10 +59,10 @@ interpreter.close()
 #     tau=0.001
 # )
 #
-# agent = Agent(interpreter, driver_algorithm)
+# agent = Agent(env, driver_algorithm)
 # agent.load(AGENT_PATH)
 # for i in range(4, 1_00):
 #     print("Training Iteration: ", i)
 #     agent.train(initial_episode=10 * i, episodes=10, metric=metric, batch_size=64)
 #     agent.save(AGENT_PATH)
-# interpreter.close()
+# env.close()
