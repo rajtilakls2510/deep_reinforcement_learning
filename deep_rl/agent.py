@@ -1,81 +1,100 @@
+import gym
 from deep_rl.analytics import Metric
+from abc import ABC, abstractmethod
 
 
-class Terminal:
-    # Base class to seamlessly interface with any kind of environment (even non-gym)
+class DRLEnvironment(ABC):
+    # Base class to handle agent interactions with the actual Environment (Might act as an interface between Agent and
+    # Environment in cases where you already have an environment implemented, such as  OpenAI Gym)
 
-    # Returns the current observation from the environment
-    # Returns: frame, state, env_finished or not, reward
-    def observation(self):
-        return None, None, True, 0
-
-    # Takes an action on the environment
-    def action(self, action):
-        pass
-
-    # Closes the environment (might be optional)
-    def close(self):
-        pass
-
-    # Resets the environment so that new episode can begin
-    def reset(self):
-        pass
-
-
-class Interpreter:
-    # Base class to handle agent interactions with the Terminal class
-
-    # Constructor takes any kind of Terminal
-    def __init__(self, terminal: Terminal):
-        self.terminal = terminal
-        self.steps_taken = 0
-        self.env_finished = False
-
-    # Returns the current state from observation, reward, frame
+    # Observes the environment and returns the state
+    @abstractmethod
     def observe(self):
-        frame, state, self.env_finished, reward = self.terminal.observation()
-        self.steps_taken += 1
-        preprocessed_state = self.state_preprocessing(state)
-        reward = self.calculate_reward(state, preprocessed_state, reward)
-        if self.env_finished:
-            self.steps_taken = 0
-        return preprocessed_state, reward, frame
+        pass
 
-    # Calculates and returns the reward for the current state (if no manual reward calculation is needed,
-    # reward observed from the environment is returned)
-    # For convenience, both the state and its preprocessed version is given to the function
-    def calculate_reward(self, state, preprocessed_state, reward):
-        return reward  # Calculates the reward based on the state
+    # Calculates the reward from the state
+    @abstractmethod
+    def calculate_reward(self, **kwargs):
+        pass
 
     # Preprocesses a state (Default, returns state itself)
-    def state_preprocessing(self, state):
+    def preprocess_state(self, state):
         return state
 
     # Returns a random action
-    def get_randomized_action(self):
+    def get_random_action(self):
         pass
 
     # Takes an action
+    @abstractmethod
     def take_action(self, action):
-        self.terminal.action(action)
+        pass
+
+    # Checks whether the episode has finished or not
+    @abstractmethod
+    def is_episode_finished(self):
+        pass
+
+    # Resets the environment for the next episode
+    @abstractmethod
+    def reset(self):
+        pass
+
+    # Closes the environment
+    @abstractmethod
+    def close(self):
+        pass
+
+
+class GymEnvironment(DRLEnvironment):
+    # Implementation to interface with Gym Environments
+
+    def __init__(self, env: gym.Env):
+        self.env = env
+        self.steps_taken = 0
+        self.env_finished = False
+        self.reward = 0
+        self.preprocessed_state = None
+        self.state, _ = self.env.reset()
+
+    # Returns the current state from observation, reward, frame
+    def observe(self):
+        frame = self.env.render()
+        self.steps_taken += 1
+        self.preprocessed_state = self.preprocess_state(self.state)
+        self.reward = self.calculate_reward()
+        return self.preprocessed_state, self.reward, frame
+
+    # Takes an action
+    def take_action(self, action):
+        self.state, self.reward, self.env_finished, _, _ = self.env.step(action)
+
+    # Defaults to returning gym reward
+    def calculate_reward(self, **kwargs):
+        return self.reward
+
+    def get_random_action(self):
+        return self.env.action_space.sample()
 
     # Checks whether the episode has finished or not
     def is_episode_finished(self):
         return self.env_finished
 
     def close(self):
-        self.terminal.close()
+        self.env.close()
 
     def reset(self):
-        self.terminal.reset()
+        self.steps_taken = 0
+        self.env_finished = False
+        self.state, _ = self.env.reset()
 
 
 class Agent:
 
-    def __init__(self, interpreter: Interpreter, driver_algorithm):
-        self.interpreter = interpreter
+    def __init__(self, env: DRLEnvironment, driver_algorithm):
+        self.env = env
         self.driver_algorithm = driver_algorithm
-        self.driver_algorithm.set_interpreter(interpreter)
+        self.driver_algorithm.set_env(env)
 
     def train(self, initial_episode=0, episodes=100, metric=None, **kwargs):
         if metric is None:

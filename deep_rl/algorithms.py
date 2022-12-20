@@ -11,10 +11,10 @@ class DriverAlgorithm:
     # Base class for a training algorithm
 
     def __init__(self):
-        self.interpreter = None
+        self.env = None
 
-    def set_interpreter(self, interpreter):
-        self.interpreter = interpreter
+    def set_env(self, env):
+        self.env = env
 
     # Training code goes here
     def train(self, initial_episode, episodes, metric, batch_size=None):
@@ -32,13 +32,13 @@ class DriverAlgorithm:
         for _ in range(episodes):
             current_episode = []
             metric.on_episode_begin()
-            self.interpreter.reset()
-            state, reward, frame = self.interpreter.observe()
+            self.env.reset()
+            state, reward, frame = self.env.observe()
             state = tf.convert_to_tensor(state, tf.float32)
-            while not self.interpreter.is_episode_finished():
+            while not self.env.is_episode_finished():
                 action, action_, explored = self.get_action(state, exploration)
-                self.interpreter.take_action(action.numpy())
-                state, reward, frame = self.interpreter.observe()
+                self.env.take_action(action.numpy())
+                state, reward, frame = self.env.observe()
                 state = tf.convert_to_tensor(state, tf.float32)
                 current_episode.append(
                     [frame, reward, state.numpy(), action.numpy(), action_.numpy(), explored.numpy()])
@@ -46,20 +46,20 @@ class DriverAlgorithm:
             episode_data.append(current_episode)
             metric.on_episode_end()
         metric.on_task_end()
-        return np.array(episode_data)
+        return episode_data
 
     # Return states after following a random policy
     def get_random_states(self, num_states=20):
         random_states = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
-        self.interpreter.reset()
-        state, _, _ = self.interpreter.observe()
+        self.env.reset()
+        state, _, _ = self.env.observe()
         i = 0
-        while i < num_states and not self.interpreter.is_episode_finished():
+        while i < num_states and not self.env.is_episode_finished():
             state = tf.convert_to_tensor(state, tf.float32)
             random_states = random_states.write(i, state)
             action, action_, _ = self.get_action(state)
-            self.interpreter.take_action(action.numpy())
-            state, _, _ = self.interpreter.observe()
+            self.env.take_action(action.numpy())
+            state, _, _ = self.env.observe()
             i += 1
         return random_states.stack()
 
@@ -123,20 +123,20 @@ class DeepQLearning(DriverAlgorithm):
 
             metric.on_episode_begin()
 
-            self.interpreter.reset()
+            self.env.reset()
             episode_start_chkpt = perf_counter()
-            current_state, _, _ = self.interpreter.observe()
+            current_state, _, _ = self.env.observe()
             current_state = tf.convert_to_tensor(current_state, tf.float32)
-            while not self.interpreter.is_episode_finished():
+            while not self.env.is_episode_finished():
                 action, action_value, explored = self.get_action(current_state, explore=self.exploration)
-                self.interpreter.take_action(action.numpy())
-                next_state, reward, _ = self.interpreter.observe()
+                self.env.take_action(action.numpy())
+                next_state, reward, _ = self.env.observe()
                 next_state = tf.convert_to_tensor(next_state, tf.float32)
                 reward = tf.convert_to_tensor(reward, tf.float32)
 
                 self.replay_buffer.insert_transition(
                     [current_state, action, reward, next_state,
-                     tf.convert_to_tensor(self.interpreter.is_episode_finished())])
+                     tf.convert_to_tensor(self.env.is_episode_finished())])
                 current_state = next_state
                 metric.on_episode_step(
                     {
@@ -146,18 +146,18 @@ class DeepQLearning(DriverAlgorithm):
                         "explored": explored.numpy()
                     }
                 )
-
+                update_start_chkpt = perf_counter()
                 if self.step_counter % self.learn_after_steps == 0:
                     current_states, actions, rewards, next_states, terminals = self.replay_buffer.sample_batch_transitions(
                         batch_size=batch_size)
                     if current_states.shape[0] >= batch_size:
                         self._train_step(current_states, actions, rewards, next_states, terminals,
                                          current_states.shape[0])
-
+                update_end_chkpt = perf_counter()
                 self.step_counter += 1
                 if self.step_counter % self.update_target_after == 0:
                     self.target_network.set_weights(self.q_network.get_weights())
-
+                # print(round(update_end_chkpt - update_start_chkpt, 2))
             metric.on_episode_end({"episode": i, "exploration": self.exploration})
             if (i + 1) % self.exploration_decay_after == 0:
                 self.exploration /= self.exploration_decay
@@ -174,7 +174,7 @@ class DeepQLearning(DriverAlgorithm):
         action = tf.argmax(action_, output_type=tf.int32)
         explored = tf.constant(False)
         if tf.random.uniform(shape=(), maxval=1) < explore:
-            action = tf.convert_to_tensor(self.interpreter.get_randomized_action(), tf.int32)
+            action = tf.convert_to_tensor(self.env.get_random_action(), tf.int32)
             explored = tf.constant(True)
         return action, action_[action], explored  # Action, Value for Action, explored or not
 
@@ -236,13 +236,13 @@ class DriverAlgorithmContinuous(DriverAlgorithm):
         for _ in range(episodes):
             current_episode = []
             metric.on_episode_begin()
-            self.interpreter.reset()
-            state, reward, frame = self.interpreter.observe()
+            self.env.reset()
+            state, reward, frame = self.env.observe()
             state = tf.convert_to_tensor(state, tf.float32)
-            while not self.interpreter.is_episode_finished():
+            while not self.env.is_episode_finished():
                 action = self.get_action(state, exploration)
-                self.interpreter.take_action(action.numpy())
-                state, reward, frame = self.interpreter.observe()
+                self.env.take_action(action.numpy())
+                state, reward, frame = self.env.observe()
                 state = tf.convert_to_tensor(state, tf.float32)
                 values = self.get_values(tf.expand_dims(state, axis=0))[0]
                 current_episode.append(
@@ -260,15 +260,15 @@ class DriverAlgorithmContinuous(DriverAlgorithm):
     # Return states after following a random policy
     def get_random_states(self, num_states=20):
         random_states = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
-        self.interpreter.reset()
-        state, _, _ = self.interpreter.observe()
+        self.env.reset()
+        state, _, _ = self.env.observe()
         i = 0
-        while i < num_states and not self.interpreter.is_episode_finished():
+        while i < num_states and not self.env.is_episode_finished():
             state = tf.convert_to_tensor(state, tf.float32)
             random_states = random_states.write(i, state)
             action = self.get_action(state)
-            self.interpreter.take_action(action.numpy())
-            state, _, _ = self.interpreter.observe()
+            self.env.take_action(action.numpy())
+            state, _, _ = self.env.observe()
             i += 1
         return random_states.stack()
 
@@ -342,20 +342,20 @@ class DeepDPG(DriverAlgorithmContinuous):
 
             metric.on_episode_begin()
 
-            self.interpreter.reset()
+            self.env.reset()
             episode_start_chkpt = perf_counter()
-            current_state, _, _ = self.interpreter.observe()
+            current_state, _, _ = self.env.observe()
             current_state = tf.convert_to_tensor(current_state, tf.float32)
-            while not self.interpreter.is_episode_finished():
+            while not self.env.is_episode_finished():
                 action = self.get_action(current_state, explore=self.exploration)
-                self.interpreter.take_action(action.numpy())
-                next_state, reward, _ = self.interpreter.observe()
+                self.env.take_action(action.numpy())
+                next_state, reward, _ = self.env.observe()
                 next_state = tf.convert_to_tensor(next_state, tf.float32)
                 reward = tf.convert_to_tensor(reward, tf.float32)
 
                 self.replay_buffer.insert_transition(
                     [current_state, action, reward, next_state,
-                     tf.convert_to_tensor(self.interpreter.is_episode_finished())])
+                     tf.convert_to_tensor(self.env.is_episode_finished())])
                 current_state = next_state
                 metric.on_episode_step(
                     {
@@ -390,7 +390,7 @@ class DeepDPG(DriverAlgorithmContinuous):
     def get_action(self, state, explore=0.0):
         action = self.actor_network(tf.expand_dims(state, axis=0))[0]
         if tf.random.uniform(shape=(), maxval=1) < explore:
-            action = action + tf.convert_to_tensor(self.interpreter.get_randomized_action(), tf.float32)
+            action = action + tf.convert_to_tensor(self.env.get_random_action(), tf.float32)
         return action
 
     def get_values(self, states):
@@ -439,12 +439,12 @@ class NeuralSarsa(DriverAlgorithm):
 
             metric.on_episode_begin()
 
-            self.interpreter.reset()
-            current_state, _, _ = self.interpreter.observe()
-            while not self.interpreter.is_episode_finished():
+            self.env.reset()
+            current_state, _, _ = self.env.observe()
+            while not self.env.is_episode_finished():
                 action, action_value, explored = self.get_action(current_state, explore=self.exploration)
-                self.interpreter.take_action(action)
-                next_state, reward, _ = self.interpreter.observe()
+                self.env.take_action(action)
+                next_state, reward, _ = self.env.observe()
                 next_action, next_value, _ = self.get_action(next_state, explore=self.exploration)
                 current_state_tensor = tf.constant([current_state])
                 with tf.GradientTape() as tape:
@@ -452,7 +452,7 @@ class NeuralSarsa(DriverAlgorithm):
 
                 q_grads = tape.gradient(current_values, self.q_network.trainable_weights)
 
-                if self.interpreter.is_episode_finished():
+                if self.env.is_episode_finished():
                     delta = reward - current_values[0][action]
                 else:
                     delta = reward + self.discount_factor * next_value - current_values[0][action]
@@ -485,7 +485,7 @@ class NeuralSarsa(DriverAlgorithm):
         action = tf.argmax(action_).numpy()
         explored = False
         if tf.random.uniform(shape=(), maxval=1) < explore:
-            action = self.interpreter.get_randomized_action()
+            action = self.env.get_random_action()
             explored = True
         return action, action_[action].numpy(), explored  # Action, Value for Action, explored or not
 
@@ -524,12 +524,12 @@ class NeuralSarsaLambda(DriverAlgorithm):
             for j in range(len(self.q_network.trainable_weights)):
                 el_trace.append(tf.zeros(self.q_network.trainable_weights[j].shape))
 
-            self.interpreter.reset()
-            current_state, _, _ = self.interpreter.observe()
-            while not self.interpreter.is_episode_finished():
+            self.env.reset()
+            current_state, _, _ = self.env.observe()
+            while not self.env.is_episode_finished():
                 action, action_value, explored = self.get_action(current_state, explore=self.exploration)
-                self.interpreter.take_action(action)
-                next_state, reward, _ = self.interpreter.observe()
+                self.env.take_action(action)
+                next_state, reward, _ = self.env.observe()
                 next_action, next_value, _ = self.get_action(next_state, explore=self.exploration)
                 current_state_tensor = tf.constant([current_state])
                 with tf.GradientTape() as tape:
@@ -537,7 +537,7 @@ class NeuralSarsaLambda(DriverAlgorithm):
 
                 q_grads = tape.gradient(current_values, self.q_network.trainable_weights)
 
-                if self.interpreter.is_episode_finished():
+                if self.env.is_episode_finished():
                     delta = reward - current_values[0][action]
                 else:
                     delta = reward + self.discount_factor * next_value - current_values[0][action]
@@ -572,7 +572,7 @@ class NeuralSarsaLambda(DriverAlgorithm):
         action = tf.argmax(action_).numpy()
         explored = False
         if tf.random.uniform(shape=(), maxval=1) < explore:
-            action = self.interpreter.get_randomized_action()
+            action = self.env.get_random_action()
             explored = True
         return action, action_[action].numpy(), explored  # Action, Value for Action, explored or not
 

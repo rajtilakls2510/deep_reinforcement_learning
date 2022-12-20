@@ -1,6 +1,6 @@
 import gym, imageio, os
 import cv2
-from interface import CartpoleTerminal, CartpoleInterpreter
+from cartpole_env_wrappers import CartpoleTerminal, CartpoleInterpreter
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DoubleDeepQLearning
 import numpy as np

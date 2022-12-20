@@ -1,6 +1,6 @@
 import os
 import gym
-from interface import CartpoleTerminal, CartpoleShapedInterpreter
+from cartpole_env_wrappers import CartpoleTerminal, CartpoleShapedInterpreter
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepQLearning
 from deep_rl.analytics import AvgTotalReward
