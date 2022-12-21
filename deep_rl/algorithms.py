@@ -1,13 +1,16 @@
-import os
+import os, cv2, imageio
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model, clone_model
 from tqdm import tqdm
 from deep_rl.replaybuffers import ExperienceReplay
 from time import perf_counter
+from abc import ABC, abstractmethod
+from deep_rl.analytics import Metric
+from deep_rl.exceptions import ModeInvalidException
 
 
-class DriverAlgorithm:
+class DriverAlgorithm(ABC):
     # Base class for a training algorithm
 
     def __init__(self):
@@ -17,36 +20,63 @@ class DriverAlgorithm:
         self.env = env
 
     # Training code goes here
+    @abstractmethod
     def train(self, initial_episode, episodes, metric, batch_size=None):
         pass
 
-    # Returns the next action to be taken, its value and whether it was a exploration step or not
+    # Returns the next action to be taken, its value and whether it was an exploration step or not
+    @abstractmethod
     def get_action(self, state, explore=0.0):
         return tf.constant(0), tf.constant(0), tf.constant(
             False)  # Return: Action, Value for action, Action through exploration or not
 
     # Generated episodes and returns list frames for each episode
-    def infer(self, episodes, metric, exploration=0.0):
+    def infer(self, mode="live", episodes=1, metric=Metric(), exploration=0.0, path_to_video="", fps = 30):
+        modes = ["live", "video"]
+        if mode not in modes:
+            raise ModeInvalidException("Mode: \'" + mode + "\' is not supported")
+
+        if mode == "video":
+            try:
+                os.makedirs(os.path.join(path_to_video))
+            except:
+                pass
+
         metric.on_task_begin()
-        episode_data = []
-        for _ in range(episodes):
-            current_episode = []
+        for ep in range(episodes):
             metric.on_episode_begin()
             self.env.reset()
             state, reward, frame = self.env.observe()
+
+            if mode == "video":
+                writer = imageio.get_writer(os.path.join(path_to_video, "vid_"+str(ep + 1)+".mp4"), fps = fps)
+            else:
+                winname = "Episode: "+ str(ep + 1)
+                cv2.namedWindow(winname)  # Create a named window
+                cv2.moveWindow(winname, 50, 50)  # Move it to (40,30)
             state = tf.convert_to_tensor(state, tf.float32)
             while not self.env.is_episode_finished():
                 action, action_, explored = self.get_action(state, exploration)
                 self.env.take_action(action.numpy())
+
+                if mode == "live":
+                    cv2.imshow(winname, frame)
+                    cv2.waitKey(1000//fps)
+                else:
+                    writer.append_data(frame)
+
                 state, reward, frame = self.env.observe()
                 state = tf.convert_to_tensor(state, tf.float32)
-                current_episode.append(
-                    [frame, reward, state.numpy(), action.numpy(), action_.numpy(), explored.numpy()])
+                # current_episode.append(
+                #     [frame, reward, state.numpy(), action.numpy(), action_.numpy(), explored.numpy()])
                 metric.on_episode_step()
-            episode_data.append(current_episode)
+
+            if mode == "video":
+                writer.close()
+
             metric.on_episode_end()
+            cv2.destroyAllWindows()
         metric.on_task_end()
-        return episode_data
 
     # Return states after following a random policy
     def get_random_states(self, num_states=20):

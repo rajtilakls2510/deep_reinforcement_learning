@@ -1,0 +1,2 @@
+class ModeInvalidException(Exception):
+    pass

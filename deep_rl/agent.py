@@ -8,6 +8,7 @@ class DRLEnvironment(ABC):
     # Environment in cases where you already have an environment implemented, such as  OpenAI Gym)
 
     # Observes the environment and returns the state
+    # Should return: state, reward, frame
     @abstractmethod
     def observe(self):
         pass
@@ -96,17 +97,13 @@ class Agent:
         self.driver_algorithm = driver_algorithm
         self.driver_algorithm.set_env(env)
 
-    def train(self, initial_episode=0, episodes=100, metric=None, **kwargs):
-        if metric is None:
-            metric = Metric()
+    def train(self, initial_episode=0, episodes=100, metric=Metric(), **kwargs):
         metric.set_driver_algorithm(self.driver_algorithm)
         self.driver_algorithm.train(initial_episode, episodes, metric, **kwargs)
 
-    def evaluate(self, episodes=1, metric=None, exploration=0.0):
-        if metric is None:
-            metric = Metric()
+    def evaluate(self, mode="live", episodes=1, metric=Metric(), exploration=0.0, path_to_video="", fps = 30):
         metric.set_driver_algorithm(self.driver_algorithm)
-        episodic_data = self.driver_algorithm.infer(episodes, metric, exploration)
+        episodic_data = self.driver_algorithm.infer(mode, episodes, metric, exploration, path_to_video, fps)
         return episodic_data
 
     def save(self, path=""):
