@@ -51,15 +51,18 @@ class DriverAlgorithm(ABC):
             if mode == "video":
                 writer = imageio.get_writer(os.path.join(path_to_video, "vid_"+str(ep + 1)+".mp4"), fps = fps)
             else:
+                print("\nEpisode:", str(ep + 1))
                 winname = "Episode: "+ str(ep + 1)
                 cv2.namedWindow(winname)  # Create a named window
                 cv2.moveWindow(winname, 50, 50)  # Move it to (40,30)
             state = tf.convert_to_tensor(state, tf.float32)
+            i = 0
             while not self.env.is_episode_finished():
                 action, action_, explored = self.get_action(state, exploration)
                 self.env.take_action(action.numpy())
 
                 if mode == "live":
+                    print("\rSteps: ", (i+1), end="")
                     cv2.imshow(winname, frame)
                     cv2.waitKey(1000//fps)
                 else:
@@ -70,6 +73,7 @@ class DriverAlgorithm(ABC):
                 # current_episode.append(
                 #     [frame, reward, state.numpy(), action.numpy(), action_.numpy(), explored.numpy()])
                 metric.on_episode_step()
+                i += 1
 
             if mode == "video":
                 writer.close()
@@ -257,53 +261,53 @@ class DoubleDeepQLearning(DeepQLearning):
         self.q_network.optimizer.apply_gradients(zip(grads, self.q_network.trainable_weights))
 
 
-class DriverAlgorithmContinuous(DriverAlgorithm):
+# class DriverAlgorithmContinuous(DriverAlgorithm):
+#
+#     # Generated episodes and returns list frames for each episode
+#     # def infer(self, episodes, metric, exploration=0.0):
+#     #     metric.on_task_begin()
+#     #     episode_data = []
+#     #     for _ in range(episodes):
+#     #         current_episode = []
+#     #         metric.on_episode_begin()
+#     #         self.env.reset()
+#     #         state, reward, frame = self.env.observe()
+#     #         state = tf.convert_to_tensor(state, tf.float32)
+#     #         while not self.env.is_episode_finished():
+#     #             action = self.get_action(state, exploration)
+#     #             self.env.take_action(action.numpy())
+#     #             state, reward, frame = self.env.observe()
+#     #             state = tf.convert_to_tensor(state, tf.float32)
+#     #             values = self.get_values(tf.expand_dims(state, axis=0))[0]
+#     #             current_episode.append(
+#     #                 [frame, reward, state.numpy(), action.numpy(), values.numpy()])
+#     #             metric.on_episode_step()
+#     #         episode_data.append(current_episode)
+#     #         metric.on_episode_end()
+#     #     metric.on_task_end()
+#     #     return episode_data
+#
+#     # Returns the action space
+#     # def get_action(self, state, explore=0.0):
+#     #     return tf.constant(0)  # Return: Action
+#
+#     # Return states after following a random policy
+#     def get_random_states(self, num_states=20):
+#         random_states = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
+#         self.env.reset()
+#         state, _, _ = self.env.observe()
+#         i = 0
+#         while i < num_states and not self.env.is_episode_finished():
+#             state = tf.convert_to_tensor(state, tf.float32)
+#             random_states = random_states.write(i, state)
+#             action, _, _ = self.get_action(state)
+#             self.env.take_action(action.numpy())
+#             state, _, _ = self.env.observe()
+#             i += 1
+#         return random_states.stack()
 
-    # Generated episodes and returns list frames for each episode
-    def infer(self, episodes, metric, exploration=0.0):
-        metric.on_task_begin()
-        episode_data = []
-        for _ in range(episodes):
-            current_episode = []
-            metric.on_episode_begin()
-            self.env.reset()
-            state, reward, frame = self.env.observe()
-            state = tf.convert_to_tensor(state, tf.float32)
-            while not self.env.is_episode_finished():
-                action = self.get_action(state, exploration)
-                self.env.take_action(action.numpy())
-                state, reward, frame = self.env.observe()
-                state = tf.convert_to_tensor(state, tf.float32)
-                values = self.get_values(tf.expand_dims(state, axis=0))[0]
-                current_episode.append(
-                    [frame, reward, state.numpy(), action.numpy(), values.numpy()])
-                metric.on_episode_step()
-            episode_data.append(current_episode)
-            metric.on_episode_end()
-        metric.on_task_end()
-        return episode_data
 
-    # Returns the action space
-    def get_action(self, state, explore=0.0):
-        return tf.constant(0)  # Return: Action
-
-    # Return states after following a random policy
-    def get_random_states(self, num_states=20):
-        random_states = tf.TensorArray(tf.float32, size=0, dynamic_size=True)
-        self.env.reset()
-        state, _, _ = self.env.observe()
-        i = 0
-        while i < num_states and not self.env.is_episode_finished():
-            state = tf.convert_to_tensor(state, tf.float32)
-            random_states = random_states.write(i, state)
-            action = self.get_action(state)
-            self.env.take_action(action.numpy())
-            state, _, _ = self.env.observe()
-            i += 1
-        return random_states.stack()
-
-
-class DeepDPG(DriverAlgorithmContinuous):
+class DeepDPG(DriverAlgorithm):
 
     def __init__(self, actor_network: tf.keras.Model = None, critic_network: tf.keras.Model = None, learn_after_steps=1,
                  replay_size=1000, exploration=0.1, min_exploration=0.0, exploration_decay=1.1,
@@ -345,20 +349,11 @@ class DeepDPG(DriverAlgorithmContinuous):
         critic_grads = critic_tape.gradient(critic_loss, self.critic_network.trainable_weights)
         self.critic_network.optimizer.apply_gradients(zip(critic_grads, self.critic_network.trainable_weights))
 
-        # with tf.GradientTape(persistent=True) as actor_tape:
-        #     actor_actions = self.actor_network(current_states)
-        #     critic_actor_value = self.critic_network([current_states, actor_actions])
-        #     dqda = actor_tape.gradient([critic_actor_value], [actor_actions])[0]
-        #     target_a = dqda + actor_actions
-        #     target_a = tf.stop_gradient(target_a)
-        #     actor_loss = tf.reduce_mean(0.5 * tf.reduce_sum(tf.square(target_a - actor_actions), axis=-1))
-
         with tf.GradientTape() as actor_tape:
             actor_loss = -tf.reduce_mean(self.critic_network([current_states, self.actor_network(current_states)]))
 
         actor_grads = actor_tape.gradient(actor_loss, self.actor_network.trainable_weights)
         self.actor_network.optimizer.apply_gradients(zip(actor_grads, self.actor_network.trainable_weights))
-        # del actor_tape
 
     @tf.function
     def update_targets(self, target_weights, weights, tau):
@@ -369,15 +364,12 @@ class DeepDPG(DriverAlgorithmContinuous):
         metric.load()
         metric.on_task_begin()
         for i in tqdm(range(initial_episode, initial_episode + episodes), desc="Episode"):
-
             metric.on_episode_begin()
-
             self.env.reset()
-            episode_start_chkpt = perf_counter()
             current_state, _, _ = self.env.observe()
             current_state = tf.convert_to_tensor(current_state, tf.float32)
             while not self.env.is_episode_finished():
-                action = self.get_action(current_state, explore=self.exploration)
+                action, _, _ = self.get_action(current_state, explore=self.exploration)
                 self.env.take_action(action.numpy())
                 next_state, reward, _ = self.env.observe()
                 next_state = tf.convert_to_tensor(next_state, tf.float32)
@@ -413,15 +405,17 @@ class DeepDPG(DriverAlgorithmContinuous):
                     self.exploration = self.min_exploration
 
             metric.save()
-            episode_end_chkpt = perf_counter()
-            # print("Episode Completion: ", episode_end_chkpt - episode_start_chkpt)
-        # Training End metric data storage
+        metric.on_task_end()
 
     def get_action(self, state, explore=0.0):
-        action = self.actor_network(tf.expand_dims(state, axis=0))[0]
+        state = tf.expand_dims(state, axis=0)
+        action = self.actor_network(state)
+        explored = tf.constant(False)
         if tf.random.uniform(shape=(), maxval=1) < explore:
             action = action + tf.convert_to_tensor(self.env.get_random_action(), tf.float32)
-        return action
+            explored = tf.constant(True)
+        value = self.critic_network([state, action])
+        return action[0], value[0], explored
 
     def get_values(self, states):
         return self.critic_network([states, self.actor_network(states)])
@@ -508,7 +502,7 @@ class NeuralSarsa(DriverAlgorithm):
                     self.exploration = self.min_exploration
 
             metric.save()
-        # Training End metric data storage
+        metric.on_task_end()
 
     def get_action(self, state, explore=0.0):
         action_ = self.q_network(tf.constant([state]))[0]
@@ -595,7 +589,7 @@ class NeuralSarsaLambda(DriverAlgorithm):
                     self.exploration = self.min_exploration
 
             metric.save()
-        # Training End metric data storage
+        metric.on_task_end()
 
     def get_action(self, state, explore=0.0):
         action_ = self.q_network(tf.constant([state]))[0]

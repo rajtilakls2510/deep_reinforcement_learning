@@ -29,8 +29,8 @@ class CartpoleEnvironment(GymEnvironment):
             reward = 1
 
         # If the agent could not balance the pole within 500 steps, end the episode
-        if self.steps_taken > 500:
-            self.env_finished = True
+        # if self.steps_taken > 500:
+        #     self.env_finished = True
 
         return reward
 

@@ -52,8 +52,8 @@ class GymEnvironment(DRLEnvironment):
 
     def __init__(self, env: gym.Env):
         self.env = env
-        self.steps_taken = 0
-        self.env_finished = False
+        self.terminated = False
+        self.truncated = False
         self.reward = 0
         self.preprocessed_state = None
         self.state, _ = self.env.reset()
@@ -61,14 +61,13 @@ class GymEnvironment(DRLEnvironment):
     # Returns the current state from observation, reward, frame
     def observe(self):
         frame = self.env.render()
-        self.steps_taken += 1
         self.preprocessed_state = self.preprocess_state(self.state)
         self.reward = self.calculate_reward()
         return self.preprocessed_state, self.reward, frame
 
     # Takes an action
     def take_action(self, action):
-        self.state, self.reward, self.env_finished, _, _ = self.env.step(action)
+        self.state, self.reward, self.terminated, self.truncated, _ = self.env.step(action)
 
     # Defaults to returning gym reward
     def calculate_reward(self, **kwargs):
@@ -79,14 +78,14 @@ class GymEnvironment(DRLEnvironment):
 
     # Checks whether the episode has finished or not
     def is_episode_finished(self):
-        return self.env_finished
+        return self.terminated or self.truncated
 
     def close(self):
         self.env.close()
 
     def reset(self):
-        self.steps_taken = 0
-        self.env_finished = False
+        self.terminated = False
+        self.truncated = False
         self.state, _ = self.env.reset()
 
 

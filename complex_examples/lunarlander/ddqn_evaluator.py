@@ -1,9 +1,7 @@
-import gym, imageio, os
-import cv2
+import gym
 from lunarlander_env_wrappers import LunarLanderEnvironment
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DoubleDeepQLearning
-import numpy as np
 
 env = LunarLanderEnvironment(gym.make("LunarLander-v2", render_mode = "rgb_array"))
 

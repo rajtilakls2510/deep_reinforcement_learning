@@ -21,7 +21,7 @@ plt.rc('figure', titlesize=SMALL_SIZE)  # fontsize of the figure title
 fig1 = plt.figure(1)
 fig2 = plt.figure(2)
 fig3 = plt.figure(3)
-# fig4 = plt.figure(4)
+fig4 = plt.figure(4)
 episodic_data = None
 
 AGENT_TRAIN_METRIC_PATH = os.path.join("pendulum_agent", "train_metric", "episodic_data.csv")
@@ -78,20 +78,20 @@ def plot3(i):
         print(e)
 
 
-# def plot4(i):
-#     try:
-#         plt.figure(4)
-#         plt.cla()
-#         plt.plot(episodic_data["episode"], episodic_data['exploration'], color="#FF6600")
-#         plt.title("Exploration")
-#         plt.xlabel("Episode")
-#         plt.ylabel("Epsilon")
-#     except Exception as e:
-#         print(e)
+def plot4(i):
+    try:
+        plt.figure(4)
+        plt.cla()
+        plt.plot(episodic_data["episode"], episodic_data['exploration'], color="#FF6600")
+        plt.title("Exploration")
+        plt.xlabel("Episode")
+        plt.ylabel("Epsilon")
+    except Exception as e:
+        print(e)
 
 
 anim = FuncAnimation(fig1, plot, interval=5000)
 anim2 = FuncAnimation(fig2, plot2, interval=5000)
 anim3 = FuncAnimation(fig3, plot3, interval=5000)
-# anim4 = FuncAnimation(fig4, plot4, interval=5000)
+anim4 = FuncAnimation(fig4, plot4, interval=5000)
 plt.show()

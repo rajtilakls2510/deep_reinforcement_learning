@@ -1,9 +1,7 @@
-import gym, imageio, os
-import cv2
+import gym
 from cartpole_env_wrappers import CartpoleEnvironment
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepQLearning
-import numpy as np
 
 env = CartpoleEnvironment(gym.make("CartPole-v1", render_mode = "rgb_array"))
 

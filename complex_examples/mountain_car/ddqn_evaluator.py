@@ -1,9 +1,7 @@
-import gym, imageio, os
-import cv2
+import gym, os
 from mountaincar_env_wrappers import MountainCarEnvironment
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DoubleDeepQLearning
-import numpy as np
 
 env = MountainCarEnvironment(gym.make("MountainCar-v0", render_mode = "rgb_array"))
 
@@ -18,5 +16,5 @@ agent.load(AGENT_PATH)
 agent.evaluate(mode="live", episodes=5, fps = 60)
 
 # Put Episode in Video
-# agent.evaluate(mode="video", episodes=5, path_to_video=os.path.join(AGENT_PATH, "eval"), fps=30)
+# agent.evaluate(mode="video", episodes=5, path_to_video=os.path.join(AGENT_PATH, "eval"), fps=60)
 

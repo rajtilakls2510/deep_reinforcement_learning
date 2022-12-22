@@ -2,6 +2,7 @@ import gym
 from deep_rl.agent import GymEnvironment
 from tensorflow import random, int32
 
+
 class MountainCarEnvironment(GymEnvironment):
 
     def get_random_action(self):
