@@ -96,13 +96,13 @@ class Agent:
         self.driver_algorithm = driver_algorithm
         self.driver_algorithm.set_env(env)
 
-    def train(self, initial_episode=0, episodes=100, metric=Metric(), **kwargs):
-        metric.set_driver_algorithm(self.driver_algorithm)
-        self.driver_algorithm.train(initial_episode, episodes, metric, **kwargs)
+    def train(self, initial_episode=0, episodes=100, metrics: list[Metric] = (), **kwargs):
+        for metric in metrics: metric.set_driver_algorithm(self.driver_algorithm)
+        self.driver_algorithm.train(initial_episode, episodes, metrics, **kwargs)
 
-    def evaluate(self, mode="live", episodes=1, metric=Metric(), exploration=0.0, path_to_video="", fps = 30):
-        metric.set_driver_algorithm(self.driver_algorithm)
-        episodic_data = self.driver_algorithm.infer(mode, episodes, metric, exploration, path_to_video, fps)
+    def evaluate(self, episodes=1, metrics: list[Metric] = (), exploration=0.0):
+        for metric in metrics: metric.set_driver_algorithm(self.driver_algorithm)
+        episodic_data = self.driver_algorithm.infer(episodes, metrics, exploration)
         return episodic_data
 
     def save(self, path=""):
