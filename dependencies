@@ -1,0 +1,7 @@
+pandas
+tensorflow
+imageio
+imageio-ffmpeg
+opencv-python
+cudatoolkit
+cudnn

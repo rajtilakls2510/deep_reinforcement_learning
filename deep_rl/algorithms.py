@@ -63,7 +63,7 @@ class DriverAlgorithm(ABC):
 
                 if mode == "live":
                     print("\rSteps: ", (i+1), end="")
-                    cv2.imshow(winname, frame)
+                    cv2.imshow(winname, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
                     cv2.waitKey(1000//fps)
                 else:
                     writer.append_data(frame)
@@ -154,11 +154,8 @@ class DeepQLearning(DriverAlgorithm):
         metric.load()
         metric.on_task_begin()
         for i in tqdm(range(initial_episode, initial_episode + episodes), desc="Episode"):
-
             metric.on_episode_begin()
-
             self.env.reset()
-            episode_start_chkpt = perf_counter()
             current_state, _, _ = self.env.observe()
             current_state = tf.convert_to_tensor(current_state, tf.float32)
             while not self.env.is_episode_finished():
@@ -180,18 +177,17 @@ class DeepQLearning(DriverAlgorithm):
                         "explored": explored.numpy()
                     }
                 )
-                update_start_chkpt = perf_counter()
+
                 if self.step_counter % self.learn_after_steps == 0:
                     current_states, actions, rewards, next_states, terminals = self.replay_buffer.sample_batch_transitions(
                         batch_size=batch_size)
                     if current_states.shape[0] >= batch_size:
                         self._train_step(current_states, actions, rewards, next_states, terminals,
                                          current_states.shape[0])
-                update_end_chkpt = perf_counter()
+
                 self.step_counter += 1
                 if self.step_counter % self.update_target_after == 0:
                     self.target_network.set_weights(self.q_network.get_weights())
-                # print(round(update_end_chkpt - update_start_chkpt, 2))
             metric.on_episode_end({"episode": i, "exploration": self.exploration})
             if (i + 1) % self.exploration_decay_after == 0:
                 self.exploration /= self.exploration_decay
@@ -199,9 +195,7 @@ class DeepQLearning(DriverAlgorithm):
                     self.exploration = self.min_exploration
 
             metric.save()
-            episode_end_chkpt = perf_counter()
-            # print("Episode Completion: ", episode_end_chkpt - episode_start_chkpt)
-        # Training End metric data storage
+        metric.on_task_end()
 
     def get_action(self, state, explore=0.0):
         action_ = self.q_network(tf.expand_dims(state, axis=0))[0]
