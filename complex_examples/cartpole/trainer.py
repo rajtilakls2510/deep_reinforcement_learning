@@ -8,7 +8,7 @@ from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 
-env = CartpoleEnvironment(gym.make("CartPole-v1", render_mode = "rgb_array"))
+env = CartpoleEnvironment(gym.make("CartPole-v1", render_mode="rgb_array"))
 
 AGENT_PATH = "cart_pole_agent3"
 
@@ -33,16 +33,16 @@ exp_tracker = ExplorationTrackerMetric(os.path.join(AGENT_PATH, "train_metric"))
 driver_algorithm = DeepQLearning(
     q_net,
     learn_after_steps=3,
-    replay_size= 1_00_000,
-    discount_factor= 0.99,
+    replay_size=1_00_000,
+    discount_factor=0.99,
     exploration=1,
     min_exploration=0.01,
-    exploration_decay=1.1,
+    exploration_decay=1.05,
     exploration_decay_after=1,
     update_target_after_steps=1_000
 )
 agent = Agent(env, driver_algorithm)
-for i in range(1):
+for i in range(2):
     print("Training Iteration: ", i)
     agent.train(
         initial_episode=100 * i,

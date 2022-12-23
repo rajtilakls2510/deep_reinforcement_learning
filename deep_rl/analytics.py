@@ -1,6 +1,9 @@
 import pandas as pd
-import os, cv2, imageio
+import os, cv2, imageio, math
 import tensorflow as tf
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from cycler import cycler
 
 
 class Metric:
@@ -42,6 +45,11 @@ class Metric:
     def load(self):
         pass
 
+    # Returns data (as a dictionary) that can be plotted on graph,
+    # the first key will be used as x-axis and the rest as the y-axes
+    def get_plot_data(self):
+        pass
+
 
 # Tracks the length of the episode
 class EpisodeLengthMetric(Metric):
@@ -78,6 +86,10 @@ class EpisodeLengthMetric(Metric):
             print(self.name + " : Found " + str(len(self.episodic_data["episode"])) + " episode(s)")
         except:
             print(self.name + " : No Previous Data Found.")
+
+    def get_plot_data(self):
+        self.load()
+        return self.episodic_data
 
 
 # Tracks the total reward in an episode
@@ -116,6 +128,10 @@ class TotalRewardMetric(Metric):
         except:
             print(self.name + " : No Previous Data Found.")
 
+    def get_plot_data(self):
+        self.load()
+        return self.episodic_data
+
 
 # Tracks the Average Q value of some random states drawn at the beginning of the task
 class AverageQMetric(Metric):
@@ -152,6 +168,10 @@ class AverageQMetric(Metric):
         except:
             print(self.name + " : No Random States found")
 
+    def get_plot_data(self):
+        self.load()
+        return self.episodic_data
+
 
 # Tracks the Exploration (epsilon) value of every episode
 class ExplorationTrackerMetric(Metric):
@@ -181,6 +201,10 @@ class ExplorationTrackerMetric(Metric):
             print(self.name + " : Found " + str(len(self.episodic_data["episode"])) + " episode(s)")
         except:
             print(self.name + " : No Previous Data Found.")
+
+    def get_plot_data(self):
+        self.load()
+        return self.episodic_data
 
 
 # Used to view the live interaction with environment
@@ -219,7 +243,7 @@ class VideoEpisodeSaver(Metric):
         os.makedirs(os.path.join(self.path), exist_ok=True)
 
     def on_episode_begin(self, data=None):
-        self.writer = imageio.get_writer(os.path.join(self.path, "vid_" + str(data["episode"] + 1) + ".mp4"),
+        self.writer = imageio.get_writer(os.path.join(self.path, "Episode_" + str(data["episode"] + 1) + ".mp4"),
                                          fps=self.fps)
 
     def on_episode_step(self, data=None):
@@ -228,47 +252,83 @@ class VideoEpisodeSaver(Metric):
     def on_episode_end(self, data=None):
         self.writer.close()
 
-# class AvgTotalReward(Metric):
-#
-#     def __init__(self, path=""):
-#         super(AvgTotalReward, self).__init__(path)
-#         self.episodic_data = {"episode": [], "length": [], "total_reward": [], "avg_q": [], "exploration": []}
-#         self.current_episode = []
-#         self.random_states = tf.constant([], dtype=tf.float32)
-#
-#     def on_task_begin(self, data=None):
-#         print("Found " + str(len(self.episodic_data["episode"])) + " episode(s)")
-#         if self.random_states.shape[0] == 0:
-#             self.random_states = self.driver_algorithm.get_random_states()
-#
-#     def on_episode_begin(self, data=None):
-#         self.current_episode = []
-#
-#     # data: {"action_value":0, "action":0, "reward": 0, "explored":False, "next_action_value":0, "next_action":0}
-#     def on_episode_step(self, data=None):
-#         self.current_episode.append(data)
-#
-#     # data: {"episode":0, "exploration":0.0}
-#     def on_episode_end(self, data=None):
-#         total_reward = 0
-#         for step in self.current_episode:
-#             total_reward += step["reward"]
-#         self.episodic_data["episode"].append(data["episode"])
-#         self.episodic_data["length"].append(len(self.current_episode))
-#         self.episodic_data["total_reward"].append(total_reward)
-#         self.episodic_data["avg_q"].append(tf.reduce_mean(self.driver_algorithm.get_values(self.random_states)).numpy())
-#         self.episodic_data["exploration"].append(data["exploration"])
-#
-#     # def on_task_end(self, data=None):
-#
-#     def save(self):
-#         tf.io.write_file(os.path.join(self.path, "random_states.tfw"), tf.io.serialize_tensor(self.random_states))
-#         pd.DataFrame(self.episodic_data).to_csv(os.path.join(self.path, "episodic_data.csv"), index=False)
-#
-#     def load(self):
-#         try:
-#             self.episodic_data = pd.read_csv(os.path.join(self.path, "episodic_data.csv")).to_dict('list')
-#             self.random_states = tf.io.parse_tensor(tf.io.read_file(os.path.join(self.path, "random_states.tfw")),
-#                                                     tf.float32)
-#         except:
-#             print("No Random States found")
+
+class Plotter:
+    def __init__(self, metrics: list[Metric], frequency=5000):
+        self.frequency = frequency
+        self.metrics = metrics
+        self.cols = 2
+        self.rows = math.ceil(len(metrics) / self.cols)
+        for metric in self.metrics: metric.on_task_begin()
+
+        # Setting up plot styles
+        SMALL_SIZE = 10
+        MEDIUM_SIZE = 12
+        BIGGER_SIZE = 14
+
+        plt.rc('font', size=SMALL_SIZE)  # controls default text sizes
+        plt.rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
+        plt.rc('axes', labelsize=SMALL_SIZE)  # fontsize of the x and y labels
+        plt.rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+        plt.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+        plt.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
+        plt.rc('figure', titlesize=SMALL_SIZE)  # fontsize of the figure title
+
+        plt.rcParams["lines.color"] = "#F8F8F2"
+        plt.rcParams["patch.edgecolor"] = "#F8F8F2"
+
+        plt.rcParams["text.color"] = "#F8F8F2"
+
+        plt.rcParams["axes.facecolor"] = "#282A36"
+        plt.rcParams["axes.edgecolor"] = "#F8F8F2"
+        plt.rcParams["axes.labelcolor"] = "#F8F8F2"
+
+        plt.rcParams["axes.prop_cycle"] = cycler('color',
+                                                 ['#8be9fd', '#ff79c6', '#50fa7b', '#bd93f9', '#ffb86c', '#ff5555',
+                                                  '#f1fa8c', '#6272a4'])
+
+        plt.rcParams["xtick.color"] = "#F8F8F2"
+        plt.rcParams["ytick.color"] = "#F8F8F2"
+
+        plt.rcParams["legend.framealpha"] = 0.9
+        plt.rcParams["legend.edgecolor"] = "#44475A"
+
+        plt.rcParams["grid.color"] = "#F8F8F2"
+
+        plt.rcParams["figure.facecolor"] = "#282A36"
+        plt.rcParams["figure.edgecolor"] = "#282A36"
+
+        plt.rcParams["savefig.facecolor"] = "#282A36"
+        plt.rcParams["savefig.edgecolor"] = "#282A36"
+
+        ### Boxplots
+        plt.rcParams["boxplot.boxprops.color"] = "F8F8F2"
+        plt.rcParams["boxplot.capprops.color"] = "F8F8F2"
+        plt.rcParams["boxplot.flierprops.color"] = "F8F8F2"
+        plt.rcParams["boxplot.flierprops.markeredgecolor"] = "F8F8F2"
+        plt.rcParams["boxplot.whiskerprops.color"] = "F8F8F2"
+
+        self.colors = [p['color'] for p in plt.rcParams['axes.prop_cycle']]
+        self.fig, self.axes = plt.subplots(nrows=self.rows, ncols=self.cols)
+        plt.subplots_adjust(left=0.1,
+                            bottom=0.1,
+                            right=0.9,
+                            top=0.9,
+                            wspace=0.16,
+                            hspace=0.276)
+
+    def plot(self, f):
+        data = [metric.get_plot_data() for metric in self.metrics]
+
+        for ax, d, metric, color in zip(self.axes.flat, data, self.metrics, self.colors):
+            xlabel, ylabel = d.keys()
+            ax.clear()
+            ax.plot(d[xlabel], d[ylabel], color=color, linewidth=1)
+            ax.set_title(metric.name)
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+            ax.grid(visible=True, linewidth=0.05)
+
+    def show(self):
+        anim = FuncAnimation(self.fig, self.plot, interval=self.frequency)
+        plt.show()
