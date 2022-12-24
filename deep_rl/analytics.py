@@ -277,10 +277,10 @@ class LiveEpisodeViewer(Metric):
         self.fps = fps
 
     def on_episode_begin(self, data=None):
-        print("\nEpisode:", str(data["episode"] + 1))
+        print("Episode:", str(data["episode"] + 1))
         self.winname = "Episode: " + str(data["episode"] + 1)
-        cv2.namedWindow(self.winname)  # Create a named window
-        cv2.moveWindow(self.winname, 50, 50)  # Move it to (40,30)
+        cv2.namedWindow(self.winname)
+        cv2.moveWindow(self.winname, 50, 50)
 
     def on_episode_step(self, data=None):
         cv2.imshow(self.winname, cv2.cvtColor(data["frame"], cv2.COLOR_BGR2RGB))

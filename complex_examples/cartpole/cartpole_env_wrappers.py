@@ -1,5 +1,6 @@
 from deep_rl.agent import GymEnvironment
-from tensorflow import random, int32, sqrt, pow, reduce_sum
+from tensorflow import random, int32
+
 
 # Creating Custom Gym Environment wrapper to change the reward function
 class CartpoleEnvironment(GymEnvironment):
@@ -41,17 +42,3 @@ class CartpoleEnvironment(GymEnvironment):
 
     def get_random_action(self):
         return random.uniform(shape=(), maxval=2, dtype=int32)
-
-
-# Another wrapper with a different reward function
-class CartpoleShapedEnvironment(CartpoleEnvironment):
-
-    def __init__(self, env):
-        super().__init__(env)
-        self.prev_shape = 0
-
-    def calculate_reward(self):
-        shape = -sqrt(reduce_sum(pow(self.preprocessed_state, 2)))
-        reward = shape - self.prev_shape
-        self.prev_shape = shape
-        return reward
