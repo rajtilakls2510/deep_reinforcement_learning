@@ -8,18 +8,19 @@ from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 
+
+# Wrapping the gym environment to interface with our library
 env = CartpoleEnvironment(gym.make("CartPole-v1", render_mode="rgb_array"))
 
-AGENT_PATH = "cart_pole_agent3"
+# Path to Agent folder
+AGENT_PATH = "cart_pole_agent"
 
 # Q Network
-
 net_input = Input(shape=(4,))
 x = Dense(32, activation="relu")(net_input)
 x = Dense(16, activation="relu")(x)
 output = Dense(2, activation="linear")(x)
 q_net = Model(inputs=net_input, outputs=output)
-
 optimizer = Adam()
 q_net.compile(optimizer=optimizer)
 
@@ -30,7 +31,9 @@ avg_q = AverageQMetric(os.path.join(AGENT_PATH, "train_metric"))
 exp_tracker = ExplorationTrackerMetric(os.path.join(AGENT_PATH, "train_metric"))
 regret = RegretMetric(os.path.join(AGENT_PATH, "train_metric"))
 
-# Start training from scratch
+# =============== Starting training from scratch ======================
+
+# Creating the algorithm that will be used to train the agent
 driver_algorithm = DeepQLearning(
     q_net,
     learn_after_steps=3,
@@ -42,7 +45,10 @@ driver_algorithm = DeepQLearning(
     exploration_decay_after=1,
     update_target_after_steps=1_000
 )
+# Creating the Agent class
 agent = Agent(env, driver_algorithm)
+
+# Training for 500 episodes. Saving the agent every 100 episodes
 for i in range(5):
     print("Training Iteration: ", i)
     agent.train(
@@ -54,7 +60,7 @@ for i in range(5):
     agent.save(AGENT_PATH)
 env.close()
 
-# Load agent and train (change exploration param)
+# ============================== Loading the agent and resuming training ================
 # driver_algorithm = DeepQLearning(
 #     learn_after_steps=3,
 #     replay_size= 1_00_000,

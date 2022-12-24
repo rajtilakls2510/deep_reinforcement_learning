@@ -314,11 +314,12 @@ class VideoEpisodeSaver(Metric):
 
 
 class Plotter:
-    def __init__(self, metrics: list[Metric], frequency=5000):
+    def __init__(self, metrics: list[Metric], frequency=5000, smoothing = 0.8):
         self.frequency = frequency
         self.metrics = metrics
         self.cols = 3
         self.rows = math.ceil(len(metrics) / self.cols)
+        self.smoothingWeight = smoothing
 
         # Setting up plot styles
         SMALL_SIZE = 10
@@ -360,7 +361,7 @@ class Plotter:
         plt.rcParams["savefig.facecolor"] = "#383A59"
         plt.rcParams["savefig.edgecolor"] = "#383A59"
 
-        ### Boxplots
+        # Boxplots
         plt.rcParams["boxplot.boxprops.color"] = "F8F8F2"
         plt.rcParams["boxplot.capprops.color"] = "F8F8F2"
         plt.rcParams["boxplot.flierprops.color"] = "F8F8F2"
@@ -384,8 +385,17 @@ class Plotter:
 
         for ax, d, metric, color in zip(self.axes.flat, data, self.metrics, self.colors):
             xlabel, ylabel = d.keys()
+            smoothed = []
+            try:
+                last = d[ylabel][0]
+                for smoothee in d[ylabel]:
+                    last = last * self.smoothingWeight + (1 - self.smoothingWeight) * smoothee
+                    smoothed.append(last)
+            except:
+                pass
             ax.clear()
-            ax.plot(d[xlabel], d[ylabel], color=color, linewidth=1)
+            ax.plot(d[xlabel], d[ylabel], color=color, linewidth=0.5, alpha = 0.25)     # Original Plot
+            ax.plot(d[xlabel], smoothed, color=color, linewidth=1)     # Smoothed Plot
             ax.set_title(metric.name)
             ax.set_xlabel(xlabel)
             ax.set_ylabel(ylabel)

@@ -4,9 +4,10 @@ from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepQLearning
 from deep_rl.analytics import TotalRewardMetric, EpisodeLengthMetric, LiveEpisodeViewer, VideoEpisodeSaver
 
+# Wrapping the gym environment to interface with our library
 env = CartpoleEnvironment(gym.make("CartPole-v1", render_mode = "rgb_array"))
 
-AGENT_PATH = "cart_pole_agent3"
+AGENT_PATH = "cart_pole_agent"
 
 driver_algo = DeepQLearning()
 agent = Agent(env, driver_algo)
