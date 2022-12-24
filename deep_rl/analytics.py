@@ -4,6 +4,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from cycler import cycler
+from collections import defaultdict
 
 
 class Metric:
@@ -88,8 +89,10 @@ class EpisodeLengthMetric(Metric):
             print(self.name + " : No Previous Data Found.")
 
     def get_plot_data(self):
-        self.load()
-        return self.episodic_data
+        try:
+            return pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
+        except:
+            return {"episode": [], "length": []}
 
 
 # Tracks the total reward in an episode
@@ -129,8 +132,10 @@ class TotalRewardMetric(Metric):
             print(self.name + " : No Previous Data Found.")
 
     def get_plot_data(self):
-        self.load()
-        return self.episodic_data
+        try:
+            return pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
+        except:
+            return {"episode": [], "total_reward": []}
 
 
 # Tracks the Average Q value of some random states drawn at the beginning of the task
@@ -169,8 +174,10 @@ class AverageQMetric(Metric):
             print(self.name + " : No Random States found")
 
     def get_plot_data(self):
-        self.load()
-        return self.episodic_data
+        try:
+            return pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
+        except:
+            return {"episode": [], "avg_q": []}
 
 
 # Tracks the Exploration (epsilon) value of every episode
@@ -203,8 +210,61 @@ class ExplorationTrackerMetric(Metric):
             print(self.name + " : No Previous Data Found.")
 
     def get_plot_data(self):
+        try:
+            return pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
+        except:
+            return {"episode": [], "exploration": []}
+
+
+# Tracks the total regret per episode
+class RegretMetric(Metric):
+
+    def __init__(self, path=""):
+        super(RegretMetric, self).__init__(path)
+        self.name = "Regret"
+        self.episodic_data = {"episode": [], "regret": []}
+        self.values = []
+        self.rewards = []
+
+    def on_task_begin(self, data=None):
         self.load()
-        return self.episodic_data
+
+    def on_episode_begin(self, data=None):
+        self.values = []
+        self.rewards = []
+
+    def on_episode_step(self, data=None):
+        self.values.insert(0, data["action_value"])
+        self.rewards.insert(0, data["reward"])
+
+    def on_episode_end(self, data=None):
+        total_regret = 0
+        ret = 0
+        for value, reward in zip(self.values, self.rewards):
+            ret = ret * self.driver_algorithm.discount_factor.numpy() + reward
+            total_regret += abs(ret - value)
+        self.episodic_data["episode"].append(data["episode"])
+        self.episodic_data["regret"].append(total_regret)
+        self.save()
+
+    def save(self):
+        os.makedirs(self.path, exist_ok=True)
+        df = pd.DataFrame(self.episodic_data)
+        df.drop_duplicates(subset=["episode"], keep="last", inplace=True)
+        df.to_csv(os.path.join(self.path, self.name + ".csv"), index=False)
+
+    def load(self):
+        try:
+            self.episodic_data = pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
+            print(self.name + " : Found " + str(len(self.episodic_data["episode"])) + " episode(s)")
+        except:
+            print(self.name + " : No Previous Data Found.")
+
+    def get_plot_data(self):
+        try:
+            return pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
+        except:
+            return {"episode": [], "regret": []}
 
 
 # Used to view the live interaction with environment
@@ -257,9 +317,8 @@ class Plotter:
     def __init__(self, metrics: list[Metric], frequency=5000):
         self.frequency = frequency
         self.metrics = metrics
-        self.cols = 2
+        self.cols = 3
         self.rows = math.ceil(len(metrics) / self.cols)
-        for metric in self.metrics: metric.on_task_begin()
 
         # Setting up plot styles
         SMALL_SIZE = 10
@@ -295,11 +354,11 @@ class Plotter:
 
         plt.rcParams["grid.color"] = "#F8F8F2"
 
-        plt.rcParams["figure.facecolor"] = "#282A36"
-        plt.rcParams["figure.edgecolor"] = "#282A36"
+        plt.rcParams["figure.facecolor"] = "#383A59"
+        plt.rcParams["figure.edgecolor"] = "#383A59"
 
-        plt.rcParams["savefig.facecolor"] = "#282A36"
-        plt.rcParams["savefig.edgecolor"] = "#282A36"
+        plt.rcParams["savefig.facecolor"] = "#383A59"
+        plt.rcParams["savefig.edgecolor"] = "#383A59"
 
         ### Boxplots
         plt.rcParams["boxplot.boxprops.color"] = "F8F8F2"
@@ -309,13 +368,16 @@ class Plotter:
         plt.rcParams["boxplot.whiskerprops.color"] = "F8F8F2"
 
         self.colors = [p['color'] for p in plt.rcParams['axes.prop_cycle']]
+        self.colors = self.colors * (len(self.metrics) // len(self.colors) + 1)
         self.fig, self.axes = plt.subplots(nrows=self.rows, ncols=self.cols)
-        plt.subplots_adjust(left=0.1,
+        for i in range(self.cols - len(self.metrics) % self.cols):
+            self.fig.delaxes(self.axes[-1][self.cols - i - 1])
+        plt.subplots_adjust(left=0.05,
                             bottom=0.1,
-                            right=0.9,
-                            top=0.9,
-                            wspace=0.16,
-                            hspace=0.276)
+                            right=0.95,
+                            top=0.95,
+                            wspace=0.2,
+                            hspace=0.3)
 
     def plot(self, f):
         data = [metric.get_plot_data() for metric in self.metrics]
@@ -329,6 +391,6 @@ class Plotter:
             ax.set_ylabel(ylabel)
             ax.grid(visible=True, linewidth=0.05)
 
-    def show(self):
+    def show(self, block = True):
         anim = FuncAnimation(self.fig, self.plot, interval=self.frequency)
-        plt.show()
+        plt.show(block = block)

@@ -1,7 +1,10 @@
 pandas
+matplotlib
 tensorflow
 imageio
 imageio-ffmpeg
 opencv-python
+
+#GPU
 cudatoolkit
 cudnn
