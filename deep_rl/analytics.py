@@ -216,13 +216,13 @@ class ExplorationTrackerMetric(Metric):
             return {"episode": [], "exploration": []}
 
 
-# Tracks the total regret per episode
-class RegretMetric(Metric):
+# Tracks the total value error against the actual return per episode
+class AbsoluteValueErrorMetric(Metric):
 
     def __init__(self, path=""):
-        super(RegretMetric, self).__init__(path)
-        self.name = "Regret"
-        self.episodic_data = {"episode": [], "regret": []}
+        super(AbsoluteValueErrorMetric, self).__init__(path)
+        self.name = "Absolute Value Error"
+        self.episodic_data = {"episode": [], "absolute error": []}
         self.values = []
         self.rewards = []
 
@@ -238,13 +238,13 @@ class RegretMetric(Metric):
         self.rewards.insert(0, data["reward"])
 
     def on_episode_end(self, data=None):
-        total_regret = 0
+        total_error = 0
         ret = 0
         for value, reward in zip(self.values, self.rewards):
             ret = ret * self.driver_algorithm.discount_factor.numpy() + reward
-            total_regret += abs(ret - value)
+            total_error += abs(ret - value)
         self.episodic_data["episode"].append(data["episode"])
-        self.episodic_data["regret"].append(total_regret)
+        self.episodic_data["absolute error"].append(total_error)
         self.save()
 
     def save(self):
@@ -264,7 +264,7 @@ class RegretMetric(Metric):
         try:
             return pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
         except:
-            return {"episode": [], "regret": []}
+            return {"episode": [], "total_error": []}
 
 
 # Used to view the live interaction with environment

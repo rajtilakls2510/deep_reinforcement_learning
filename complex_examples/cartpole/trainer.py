@@ -3,7 +3,7 @@ import gym
 from cartpole_env_wrappers import CartpoleEnvironment
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepQLearning
-from deep_rl.analytics import EpisodeLengthMetric, TotalRewardMetric, AverageQMetric, ExplorationTrackerMetric, RegretMetric
+from deep_rl.analytics import EpisodeLengthMetric, TotalRewardMetric, AverageQMetric, ExplorationTrackerMetric, AbsoluteValueErrorMetric
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
@@ -29,7 +29,7 @@ ep_length = EpisodeLengthMetric(os.path.join(AGENT_PATH, "train_metric"))
 total_reward = TotalRewardMetric(os.path.join(AGENT_PATH, "train_metric"))
 avg_q = AverageQMetric(os.path.join(AGENT_PATH, "train_metric"))
 exp_tracker = ExplorationTrackerMetric(os.path.join(AGENT_PATH, "train_metric"))
-regret = RegretMetric(os.path.join(AGENT_PATH, "train_metric"))
+value_error = AbsoluteValueErrorMetric(os.path.join(AGENT_PATH, "train_metric"))
 
 # =============== Starting training from scratch ======================
 
@@ -55,7 +55,7 @@ for i in range(5):
         initial_episode=100 * i,
         episodes=100,
         batch_size=64,
-        metrics=[ep_length, total_reward, avg_q, exp_tracker, regret]
+        metrics=[ep_length, total_reward, avg_q, exp_tracker, value_error]
     )
     agent.save(AGENT_PATH)
 env.close()
@@ -75,6 +75,6 @@ env.close()
 # agent.load(AGENT_PATH)
 # for i in range(2, 1_0):
 #     print("Training Iteration: ", i)
-#     agent.train(initial_episode=100 * i, episodes=100, batch_size=64, metrics=[ep_length, total_reward, avg_q, exp_tracker])
+#     agent.train(initial_episode=100 * i, episodes=100, batch_size=64, metrics=[ep_length, total_reward, avg_q, exp_tracker, value_error])
 #     agent.save(AGENT_PATH)
 # env.close()
