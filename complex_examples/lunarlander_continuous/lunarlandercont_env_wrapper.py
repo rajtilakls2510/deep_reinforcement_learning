@@ -2,6 +2,8 @@ import gym
 from deep_rl.agent import GymEnvironment
 import numpy as np
 
+
+# Creating Custom Gym Environment wrapper to change the random action function
 class LunarLanderContinuousEnvironment(GymEnvironment):
 
     def __init__(self, env: gym.Env):

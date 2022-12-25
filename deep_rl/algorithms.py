@@ -354,7 +354,7 @@ class DeepDPG(DriverAlgorithm):
             action = action + tf.convert_to_tensor(self.env.get_random_action(), tf.float32)
             explored = tf.constant(True)
         value = self.critic_network([state, action])
-        return action[0], value[0], explored
+        return action[0], value[0][0], explored
 
     def get_values(self, states):
         return self.critic_network([states, self.actor_network(states)])
