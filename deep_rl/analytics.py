@@ -4,7 +4,6 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from cycler import cycler
-from collections import defaultdict
 
 
 class Metric:
@@ -264,7 +263,7 @@ class AbsoluteValueErrorMetric(Metric):
         try:
             return pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
         except:
-            return {"episode": [], "total_error": []}
+            return {"episode": [], "absolute error": []}
 
 
 # Used to view the live interaction with environment

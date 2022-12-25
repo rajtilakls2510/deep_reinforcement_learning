@@ -1,5 +1,7 @@
-from deep_rl.analytics import Plotter, EpisodeLengthMetric, TotalRewardMetric, AverageQMetric, ExplorationTrackerMetric, AbsoluteValueErrorMetric
 import os
+# Set this to not use Tensorflow-GPU for just for plotting (It unnecessarily uses up free GPU memory)
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+from deep_rl.analytics import Plotter, EpisodeLengthMetric, TotalRewardMetric, AverageQMetric, ExplorationTrackerMetric, AbsoluteValueErrorMetric
 
 # =================== Plotting the live metrics of an Agent ==================
 

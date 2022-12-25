@@ -72,6 +72,7 @@ env.close()
 #     update_target_after_steps=1_000
 # )
 # agent = Agent(env, driver_algorithm)
+# # Resuming training from 200th episode and training till 1_000th episode
 # agent.load(AGENT_PATH)
 # for i in range(2, 1_0):
 #     print("Training Iteration: ", i)

@@ -1,4 +1,3 @@
-import gym
 from deep_rl.analytics import Metric
 from abc import ABC, abstractmethod
 
@@ -50,7 +49,7 @@ class DRLEnvironment(ABC):
 class GymEnvironment(DRLEnvironment):
     # Implementation to interface with Gym Environments
 
-    def __init__(self, env: gym.Env):
+    def __init__(self, env):
         self.env = env
         self.terminated = False
         self.truncated = False

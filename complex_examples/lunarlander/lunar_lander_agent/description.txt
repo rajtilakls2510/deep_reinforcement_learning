@@ -10,7 +10,7 @@ Dense(4)
 
 Training:
 - Algorithm: DeepQLearning
-- Episodes: 800
+- Episodes: 2500
 - Batch Size: 64
 - Replay Size: 1_00_000
 - Exploration Decay: 1.005
