@@ -1,19 +1,27 @@
 import gym, os
-from mountaincar_env_wrappers import MountainCarShapedEnvironment
+from mountaincar_env_wrappers import MountainCarEnvironment
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepQLearning
+from deep_rl.analytics import TotalRewardMetric, EpisodeLengthMetric, LiveEpisodeViewer, VideoEpisodeSaver
 
-env = MountainCarShapedEnvironment(gym.make("MountainCar-v0", render_mode = "rgb_array"))
+# Wrapping the gym environment to interface with our library
+env = MountainCarEnvironment(gym.make("MountainCar-v0", render_mode = "rgb_array"))
 
-AGENT_PATH = "mountain_car_shaped_agent"
+AGENT_PATH = "mountain_car_agent"
 
 driver_algo = DeepQLearning()
 agent = Agent(env, driver_algo)
 agent.load(AGENT_PATH)
 
-# Live Agent Play
-agent.evaluate(mode="live", episodes=5, fps = 60)
+# Setting up metrics for evaluation
+total_reward = TotalRewardMetric(os.path.join(AGENT_PATH, "eval_metric"))
+ep_length = EpisodeLengthMetric(os.path.join(AGENT_PATH, "eval_metric"))
 
-# Put Episode in Video
-# agent.evaluate(mode="video", episodes=5, path_to_video=os.path.join(AGENT_PATH, "eval"), fps=60)
+# Live Agent Play
+live_viewer = LiveEpisodeViewer(fps=60)
+agent.evaluate(episodes=5, metrics=[total_reward, ep_length, live_viewer], exploration=0.0)
+
+# Put Episodes in Video
+# video_saver = VideoEpisodeSaver(os.path.join(AGENT_PATH, "eval_metric"), fps=60)
+# agent.evaluate(episodes=5, metrics=[total_reward, ep_length, video_saver], exploration=0.0)
 
