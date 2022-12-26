@@ -55,7 +55,7 @@ for i in range(30):
     agent.save(AGENT_PATH)
 env.close()
 
-# Load agent and train (change exploration param)
+# ============================== Loading the agent and resuming training ================
 # driver_algorithm = DeepQLearning(
 #     q_network,
 #     learn_after_steps=4,

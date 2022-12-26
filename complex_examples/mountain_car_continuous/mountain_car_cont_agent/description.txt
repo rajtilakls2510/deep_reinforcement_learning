@@ -1,9 +1,11 @@
-Reward: Same as environment
+Reward:
+r = (position - 0.5) / (|velocity| * 1000) where velocity>=0.1
 
 Actor Network:
 Input(2,) : State Input
-Dense(32)
-Dense(1)
+Dense(64)
+Dense(64)
+Dense(2)
 
 Critic Network:
 Input(2,) : State Input
@@ -13,23 +15,23 @@ Input(1) : Action Input
 x2 = Dense(32)
 
 Concatenate(x1, x2)
-Dense(256)
-Dense(256)
+Dense(64)
 Dense(1)
 
 Training:
 - Algorithm: DeepDPG
-- Learn After Steps: 1
-- Episodes: 300
+- Episodes: 100
 - Batch Size: 64
 - Replay Size: 1_00_000
-- Exploration Noise: Ornstein-Uhlenbeck
+- Exploration: 1
+- Exploration Decay: 1
+- Min Exploration: 0.01
+- Exploration Decay After: 1
 - Discount Factor: 0.99
-- Tau: 0.005
-- Actor Optimizer: Adam
-- Actor Learning Rate: 0.001
-- Critic Optimizer: Adam
-- Critic Learning Rate: 0.002
+- Learn After Steps: 3
+- Update Target Network Parameters After: 1_000 steps
+- Optimizer: Adam
+- Learning Rate: 0.001
 
 Results:
 Training satisfactory. Agent is able to ultimately reach the goal.

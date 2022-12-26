@@ -1,6 +1,11 @@
 Reward:
 r = (position - 0.5) / (|velocity| * 1000) where velocity>=0.1
 
+Q Network:
+Input(2)
+Dense(32)
+Dense(3)
+
 Training:
 - Algorithm: DeepQLearning
 - Episodes: 300
