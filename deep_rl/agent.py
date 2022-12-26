@@ -3,25 +3,28 @@ from abc import ABC, abstractmethod
 
 
 class DRLEnvironment(ABC):
-    # Base class to handle agent interactions with the actual Environment (Might act as an interface between Agent and
-    # Environment in cases where you already have an environment implemented, such as  OpenAI Gym)
+    # Base class to handle agent interactions with the actual Environment
+    # Description: This class is used by all of our algorithms to interact with the environment.
+    #               Therefore, wrap your environment with this class to use it with this library.
 
     # Observes the environment and returns the state
-    # Should return: state, reward, frame
+    # Returns: state, reward, frame
     @abstractmethod
     def observe(self):
         pass
 
     # Calculates the reward from the state
+    # Returns: New Reward
     @abstractmethod
     def calculate_reward(self, **kwargs):
         pass
 
     # Preprocesses a state (Default, returns state itself)
+    # Returns: preprocessed state
     def preprocess_state(self, state):
         return state
 
-    # Returns a random action
+    # Returns: Random action
     def get_random_action(self):
         pass
 
@@ -31,6 +34,7 @@ class DRLEnvironment(ABC):
         pass
 
     # Checks whether the episode has finished or not
+    # Returns: True or False based on whether the episode has finished or not.
     @abstractmethod
     def is_episode_finished(self):
         pass
@@ -48,6 +52,8 @@ class DRLEnvironment(ABC):
 
 class GymEnvironment(DRLEnvironment):
     # Implementation to interface with Gym Environments
+    # Description: This is a default implementation provided to interface with OpenAI Gym Environments since
+    #               OpenAI Gym is turning out to be the first choice to use and implement RL Environments
 
     def __init__(self, env):
         self.env = env
@@ -89,25 +95,30 @@ class GymEnvironment(DRLEnvironment):
 
 
 class Agent:
+    # The main class to create an agent, handle it's training and evaluation
 
+    # Takes an Environment to interact with and a Driver Algorithm to train and evaluate with
     def __init__(self, env: DRLEnvironment, driver_algorithm):
         self.env = env
         self.driver_algorithm = driver_algorithm
         self.driver_algorithm.set_env(env)
 
+    # Trains the agent from initial Episodes to episodes. Takes some metrics that track the progress of training
     def train(self, initial_episode=0, episodes=100, metrics: list[Metric] = (), **kwargs):
         for metric in metrics: metric.set_driver_algorithm(self.driver_algorithm)
         self.driver_algorithm.train(initial_episode, episodes, metrics, **kwargs)
 
+    # Evaluates the agent for given episodes. Takes some metrics that track the progress of evaluation
     def evaluate(self, episodes=1, metrics: list[Metric] = (), exploration=0.0):
         for metric in metrics: metric.set_driver_algorithm(self.driver_algorithm)
-        episodic_data = self.driver_algorithm.infer(episodes, metrics, exploration)
-        return episodic_data
+        self.driver_algorithm.infer(episodes, metrics, exploration)
 
+    # Saves the agent at a specified path
     def save(self, path=""):
         self.driver_algorithm.save(path)
         print("Agent Saved")
 
+    # Loads the agent from a specified path
     def load(self, path=""):
         self.driver_algorithm.load(path)
         print("Agent Loaded")

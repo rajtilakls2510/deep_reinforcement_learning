@@ -3,22 +3,29 @@ import os
 
 
 class ReplayBuffer:
+    # Base class for any kind of ReplayBuffer
+    # Description: This class is used to store experience replays by different kinds of
+    #           RL Algorithms.
 
     # Inserts transition to buffer
     def insert_transition(self, transition):
         pass
 
+    # Samples a batch of transitions from the buffer
     def sample_batch_transitions(self, batch_size=16):
         pass
 
+    # Saves the buffer
     def save(self, path=""):
         pass
 
+    # Loads the buffer
     def load(self, path=""):
         pass
 
 
 class ExperienceReplay(ReplayBuffer):
+    # This class is an implementation of a simple Experience Replay Buffer
 
     def __init__(self, max_transitions=1000, continuous=False):
         self.max_transitions = max_transitions

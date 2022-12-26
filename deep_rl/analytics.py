@@ -1,4 +1,5 @@
 import pandas as pd
+from abc import ABC
 import os, cv2, imageio, math
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -6,8 +7,15 @@ from matplotlib.animation import FuncAnimation
 from cycler import cycler
 
 
-class Metric:
+class Metric(ABC):
+    # Base class to implement a metric for an algorithm
+    # Description: This class acts as a callback where methods of this class are called during training and
+    #           evaluation runs. You can use this class to keep track of different things during training,
+    #           evaluation and so on. You can also use this class to see the live interactions of the agent
+    #           with the environment or save the interaction frames as a video. Implementations of such are
+    #           provided through the LiveEpisodeViewer and VideoEpisodeSaver subclasses.
 
+    # Preferably takes a path to save this metric
     def __init__(self, path=""):
         self.path = path
         self.driver_algorithm = None
@@ -51,8 +59,8 @@ class Metric:
         pass
 
 
-# Tracks the length of the episode
 class EpisodeLengthMetric(Metric):
+    # Tracks the length of the episode
 
     def __init__(self, path=""):
         super(EpisodeLengthMetric, self).__init__(path)
@@ -94,8 +102,8 @@ class EpisodeLengthMetric(Metric):
             return {"episode": [], "length": []}
 
 
-# Tracks the total reward in an episode
 class TotalRewardMetric(Metric):
+    # Tracks the total reward in an episode
 
     def __init__(self, path=""):
         super(TotalRewardMetric, self).__init__(path)
@@ -137,8 +145,8 @@ class TotalRewardMetric(Metric):
             return {"episode": [], "total_reward": []}
 
 
-# Tracks the Average Q value of some random states drawn at the beginning of the task
 class AverageQMetric(Metric):
+    # Tracks the Average Q value of some random states drawn at the beginning of the task
 
     def __init__(self, path=""):
         super(AverageQMetric, self).__init__(path)
@@ -179,8 +187,8 @@ class AverageQMetric(Metric):
             return {"episode": [], "avg_q": []}
 
 
-# Tracks the Exploration (epsilon) value of every episode
 class ExplorationTrackerMetric(Metric):
+    # Tracks the Exploration (epsilon) value of every episode
 
     def __init__(self, path=""):
         super(ExplorationTrackerMetric, self).__init__(path)
@@ -215,8 +223,8 @@ class ExplorationTrackerMetric(Metric):
             return {"episode": [], "exploration": []}
 
 
-# Tracks the total value error against the actual return per episode
 class AbsoluteValueErrorMetric(Metric):
+    # Tracks the total value error against the actual return per episode
 
     def __init__(self, path=""):
         super(AbsoluteValueErrorMetric, self).__init__(path)
@@ -266,8 +274,8 @@ class AbsoluteValueErrorMetric(Metric):
             return {"episode": [], "absolute error": []}
 
 
-# Used to view the live interaction with environment
 class LiveEpisodeViewer(Metric):
+    # Used to view the live interaction with environment
 
     def __init__(self, path="", fps=30):
         super(LiveEpisodeViewer, self).__init__(path)
@@ -289,8 +297,8 @@ class LiveEpisodeViewer(Metric):
         cv2.destroyWindow(self.winname)
 
 
-# Used to store agent's interaction with environment as a video
 class VideoEpisodeSaver(Metric):
+    # Used to store agent's interaction with environment as a video
 
     def __init__(self, path="", fps=30):
         super(VideoEpisodeSaver, self).__init__(path)
@@ -313,6 +321,11 @@ class VideoEpisodeSaver(Metric):
 
 
 class Plotter:
+    # This class is used to plot the metrics that are/were being tracked during training or evaluation.
+    # Simply initialize this class with the list of metrics that you want to track with appropriate paths
+    # and call the show() method. This will bring up a matplotlib figure where you will be able to see graphs
+    # for all the metrics that are being tracked.
+
     def __init__(self, metrics: list[Metric], frequency=5000, smoothing = 0.8):
         self.frequency = frequency
         self.metrics = metrics

@@ -8,7 +8,10 @@ from deep_rl.analytics import Metric
 
 
 class DriverAlgorithm(ABC):
-    # Base class for a training algorithm
+    # Base abstract class for a driver algorithm
+    # Description: This class is the base class for a driver algorithm which drives an agent.
+    #           It contains methods which can run training steps and evaluation steps. By default,
+    #           an implementation of evaluation run is given by through infer() method.
 
     def __init__(self):
         self.env = None
@@ -31,19 +34,23 @@ class DriverAlgorithm(ABC):
     def infer(self, episodes=1, metrics: list[Metric] = (), exploration=0.0):
         for metric in metrics: metric.on_task_begin()
 
+        # Evaluating for multiple episodes
         for ep in range(episodes):
             episode_data = {"episode": ep, "exploration": exploration}
             for metric in metrics: metric.on_episode_begin(episode_data)
 
+            # Evaluation loop for an episode
             self.env.reset()
             current_state, reward, frame = self.env.observe()
             current_state = tf.convert_to_tensor(current_state, tf.float32)
             while not self.env.is_episode_finished():
+                # Interaction Step
                 action, action_value, explored = self.get_action(current_state, exploration)
                 self.env.take_action(action.numpy())
-
                 next_state, reward, frame = self.env.observe()
                 next_state = tf.convert_to_tensor(next_state, tf.float32)
+
+                # Sending step data to metrics
                 step_data = {
                     "current_state": current_state.numpy(),
                     "action_value": action_value.numpy(),
@@ -89,6 +96,7 @@ class DriverAlgorithm(ABC):
 
 
 class DeepQLearning(DriverAlgorithm):
+    # This is an Implementation of the DQN Algorithm
 
     def __init__(self, q_network: tf.keras.Model = None,
                  loss=tf.keras.losses.Huber(),
@@ -131,25 +139,30 @@ class DeepQLearning(DriverAlgorithm):
     def train(self, initial_episode, episodes, metrics: list[Metric], batch_size=16):
         for metric in metrics: metric.on_task_begin()
 
+        # Training for multiple episodes
         for i in tqdm(range(initial_episode, initial_episode + episodes), desc="Episode"):
             episode_data = {"episode": i, "exploration": self.exploration}
             for metric in metrics: metric.on_episode_begin(episode_data)
 
+            # Training loop for an episode
             self.env.reset()
             current_state, _, _ = self.env.observe()
             current_state = tf.convert_to_tensor(current_state, tf.float32)
             while not self.env.is_episode_finished():
+                # Interaction step
                 action, action_value, explored = self.get_action(current_state, explore=self.exploration)
                 self.env.take_action(action.numpy())
                 next_state, reward, frame = self.env.observe()
                 next_state = tf.convert_to_tensor(next_state, tf.float32)
                 reward = tf.convert_to_tensor(reward, tf.float32)
 
+                # Inserting transition to replay buffer
                 self.replay_buffer.insert_transition(
                     [current_state, action, reward, next_state,
                      tf.convert_to_tensor(self.env.is_episode_finished())])
                 current_state = next_state
 
+                # Sending step data to metrics
                 step_data = {
                     "current_state": current_state.numpy(),
                     "action_value": action_value.numpy(),
@@ -161,6 +174,7 @@ class DeepQLearning(DriverAlgorithm):
                 }
                 for metric in metrics: metric.on_episode_step(step_data)
 
+                # Learning from a batch of transitions
                 if self.step_counter % self.learn_after_steps == 0:
                     current_states, actions, rewards, next_states, terminals = self.replay_buffer.sample_batch_transitions(
                         batch_size=batch_size)
@@ -169,11 +183,15 @@ class DeepQLearning(DriverAlgorithm):
                                          current_states.shape[0])
 
                 self.step_counter += 1
+
+                # Updating Target Network Parameters
                 if self.step_counter % self.update_target_after == 0:
                     self.target_network.set_weights(self.q_network.get_weights())
 
             episode_data = {"episode": i, "exploration": self.exploration}
             for metric in metrics: metric.on_episode_end(episode_data)
+
+            # Decaying Exploration Parameter
             if (i + 1) % self.exploration_decay_after == 0:
                 self.exploration /= self.exploration_decay
                 if self.exploration < self.min_exploration:
@@ -209,6 +227,7 @@ class DeepQLearning(DriverAlgorithm):
 
 
 class DoubleDeepQLearning(DeepQLearning):
+    # This class is an implementation of the DoubleDQN Algorithm
 
     def __init__(self, q_network: tf.keras.Model = None,
                  loss=tf.keras.losses.Huber(),
@@ -240,6 +259,7 @@ class DoubleDeepQLearning(DeepQLearning):
 
 
 class DeepDPG(DriverAlgorithm):
+    # This class is an implementation of the DeepDPG Algorithm
 
     def __init__(self, actor_network: tf.keras.Model = None, critic_network: tf.keras.Model = None, learn_after_steps=1,
                  replay_size=1000, exploration=0.1, min_exploration=0.0, exploration_decay=1.1,
@@ -295,25 +315,30 @@ class DeepDPG(DriverAlgorithm):
     def train(self, initial_episode, episodes, metrics, batch_size=16):
         for metric in metrics: metric.on_task_begin()
 
+        # Training for multiple episodes
         for i in tqdm(range(initial_episode, initial_episode + episodes), desc="Episode"):
             episode_data = {"episode": i, "exploration": self.exploration}
             for metric in metrics: metric.on_episode_begin(episode_data)
 
+            # Training loop for an episode
             self.env.reset()
             current_state, _, _ = self.env.observe()
             current_state = tf.convert_to_tensor(current_state, tf.float32)
             while not self.env.is_episode_finished():
+                # Interaction Step
                 action, action_value, explored = self.get_action(current_state, explore=self.exploration)
                 self.env.take_action(action.numpy())
                 next_state, reward, frame = self.env.observe()
                 next_state = tf.convert_to_tensor(next_state, tf.float32)
                 reward = tf.convert_to_tensor(reward, tf.float32)
 
+                # Inserting transition in replay buffer
                 self.replay_buffer.insert_transition(
                     [current_state, action, reward, next_state,
                      tf.convert_to_tensor(self.env.is_episode_finished())])
                 current_state = next_state
 
+                # Sending step data to metrics
                 step_data = {
                         "current_state": current_state.numpy(),
                         "action_value": action_value.numpy(),
@@ -325,6 +350,7 @@ class DeepDPG(DriverAlgorithm):
                     }
                 for metric in metrics: metric.on_episode_step(step_data)
 
+                # Learning from a batch of transitions
                 if self.step_counter % self.learn_after_steps == 0:
                     current_states, actions, rewards, next_states, _ = self.replay_buffer.sample_batch_transitions(
                         batch_size=batch_size)
@@ -339,6 +365,8 @@ class DeepDPG(DriverAlgorithm):
                 self.step_counter += 1
             episode_data = {"episode": i, "exploration": self.exploration}
             for metric in metrics: metric.on_episode_end(episode_data)
+
+            # Decaying Exploration Parameter
             if (i + 1) % self.exploration_decay_after == 0:
                 self.exploration /= self.exploration_decay
                 if self.exploration < self.min_exploration:
