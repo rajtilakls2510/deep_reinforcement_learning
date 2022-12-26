@@ -22,7 +22,7 @@ Dense(1)
 Training:
 - Algorithm: DeepDPG
 - Learn After Steps: 1
-- Episodes: 200
+- Episodes: 120
 - Batch Size: 64
 - Replay Size: 1_00_000
 - Exploration Noise: Ornstein-Uhlenbeck

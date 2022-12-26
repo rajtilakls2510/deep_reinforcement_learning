@@ -23,15 +23,14 @@ Training:
 - Episodes: 100
 - Batch Size: 64
 - Replay Size: 1_00_000
-- Exploration: 1
-- Exploration Decay: 1
-- Min Exploration: 0.01
-- Exploration Decay After: 1
+- Exploration Noise: Ornstein-Uhlenbeck
 - Discount Factor: 0.99
 - Learn After Steps: 3
 - Update Target Network Parameters After: 1_000 steps
-- Optimizer: Adam
-- Learning Rate: 0.001
+- Actor Optimizer: Adam
+- Actor Learning Rate: 0.0005
+- Critic Optimizer: Adam
+- Critic Learning Rate: 0.001
 
 Results:
 Training satisfactory. Agent is able to ultimately reach the goal.

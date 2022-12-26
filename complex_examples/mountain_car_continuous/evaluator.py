@@ -1,5 +1,4 @@
 import gym, os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 from mountaincarcont_env_wrappers import MountainCarContinuousEnvironment
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepDPG
@@ -18,9 +17,9 @@ total_reward = TotalRewardMetric(os.path.join(AGENT_PATH, "eval_metric"))
 ep_length = EpisodeLengthMetric(os.path.join(AGENT_PATH, "eval_metric"))
 
 # Live Agent Play
-live_viewer = LiveEpisodeViewer(fps=60)
+# live_viewer = LiveEpisodeViewer(fps=60)
 # agent.evaluate(episodes=5, metrics=[total_reward, ep_length, live_viewer], exploration=0.0)
 
 # Put Episodes in Video
 video_saver = VideoEpisodeSaver(os.path.join(AGENT_PATH, "eval_metric"), fps=60)
-agent.evaluate(episodes=5, metrics=[total_reward, ep_length, live_viewer, video_saver], exploration=0.0)
+agent.evaluate(episodes=5, metrics=[total_reward, ep_length, video_saver], exploration=0.0)
