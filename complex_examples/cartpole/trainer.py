@@ -3,17 +3,25 @@ import gym
 from cartpole_env_wrappers import CartpoleEnvironment
 from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepQLearning
-from deep_rl.analytics import EpisodeLengthMetric, TotalRewardMetric, AverageQMetric, ExplorationTrackerMetric, AbsoluteValueErrorMetric
+from deep_rl.analytics import EpisodeLengthMetric, TotalRewardMetric, AverageQMetric, ExplorationTrackerMetric, AbsoluteValueErrorMetric, SaveAgent
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 
+# from tensorflow import config
+#
+# physical_devices = config.list_physical_devices('GPU')
+# try:
+#   config.experimental.set_memory_growth(physical_devices[0], True)
+# except:
+#   # Invalid device or cannot modify virtual devices once initialized.
+#   pass
 
 # Wrapping the gym environment to interface with our library
 env = CartpoleEnvironment(gym.make("CartPole-v1", render_mode="rgb_array"))
 
 # Path to Agent folder
-AGENT_PATH = "cart_pole_agent"
+AGENT_PATH = "cart_pole_agent2"
 
 # Q Network
 net_input = Input(shape=(4,))
@@ -30,6 +38,7 @@ total_reward = TotalRewardMetric(os.path.join(AGENT_PATH, "train_metric"))
 avg_q = AverageQMetric(os.path.join(AGENT_PATH, "train_metric"))
 exp_tracker = ExplorationTrackerMetric(os.path.join(AGENT_PATH, "train_metric"))
 value_error = AbsoluteValueErrorMetric(os.path.join(AGENT_PATH, "train_metric"))
+save_agent = SaveAgent("cartpole_checkpoints", save_after_episodes=50)
 
 # =============== Starting training from scratch ======================
 
@@ -55,7 +64,7 @@ for i in range(5):
         initial_episode=100 * i,
         episodes=100,
         batch_size=64,
-        metrics=[ep_length, total_reward, avg_q, exp_tracker, value_error]
+        metrics=[ep_length, total_reward, avg_q, exp_tracker, value_error, save_agent]
     )
     agent.save(AGENT_PATH)
 env.close()

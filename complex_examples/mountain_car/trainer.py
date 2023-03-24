@@ -9,7 +9,7 @@ from mountaincar_env_wrappers import MountainCarEnvironment
 
 # Wrapping the gym environment to interface with our library
 env = MountainCarEnvironment(gym.make("MountainCar-v0", render_mode = "rgb_array"))
-AGENT_PATH = "mountain_car_agent"
+AGENT_PATH = "mountain_car_agent2"
 
 # Q Network
 input = Input(shape=(2,))

@@ -5,6 +5,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from cycler import cycler
+from datetime import datetime
 
 
 class Metric(ABC):
@@ -320,13 +321,29 @@ class VideoEpisodeSaver(Metric):
         self.writer.close()
 
 
+class SaveAgent(Metric):
+
+    def __init__(self, path="", save_after_episodes=1):
+        super(SaveAgent, self).__init__(path)
+        self.name = "Save Agent"
+        self.current = 0
+        self.save_after = save_after_episodes
+
+    def on_episode_end(self, data=None):
+        self.current += 1
+        if self.current % self.save_after == 0:
+            episode = data["episode"]
+            os.makedirs(os.path.join(self.path, f"Episode_{episode+1} {datetime.now().strftime('%Y_%m_%d %H_%M_%S')}"), exist_ok=True)
+            self.driver_algorithm.save(os.path.join(self.path, f"Episode_{episode+1} {datetime.now().strftime('%Y_%m_%d %H_%M_%S')}"))
+
+
 class Plotter:
     # This class is used to plot the metrics that are/were being tracked during training or evaluation.
     # Simply initialize this class with the list of metrics that you want to track with appropriate paths
     # and call the show() method. This will bring up a matplotlib figure where you will be able to see graphs
     # for all the metrics that are being tracked.
 
-    def __init__(self, metrics: list[Metric], frequency=5000, smoothing = 0.8):
+    def __init__(self, metrics: list[Metric], frequency=5000, smoothing=0.8):
         self.frequency = frequency
         self.metrics = metrics
         self.cols = 3
@@ -406,13 +423,13 @@ class Plotter:
             except:
                 pass
             ax.clear()
-            ax.plot(d[xlabel], d[ylabel], color=color, linewidth=0.5, alpha = 0.25)     # Original Plot
-            ax.plot(d[xlabel], smoothed, color=color, linewidth=1)     # Smoothed Plot
+            ax.plot(d[xlabel], d[ylabel], color=color, linewidth=0.5, alpha=0.25)  # Original Plot
+            ax.plot(d[xlabel], smoothed, color=color, linewidth=1)  # Smoothed Plot
             ax.set_title(metric.name)
             ax.set_xlabel(xlabel)
             ax.set_ylabel(ylabel)
             ax.grid(visible=True, linewidth=0.05)
 
-    def show(self, block = True):
+    def show(self, block=True):
         anim = FuncAnimation(self.fig, self.plot, interval=self.frequency)
-        plt.show(block = block)
+        plt.show(block=block)
