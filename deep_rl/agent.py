@@ -109,9 +109,9 @@ class Agent:
         self.driver_algorithm.train(initial_episode, episodes, metrics, **kwargs)
 
     # Evaluates the agent for given episodes. Takes some metrics that track the progress of evaluation
-    def evaluate(self, episodes=1, metrics: list[Metric] = (), exploration=0.0):
+    def evaluate(self, initial_episode, episodes, metrics: list[Metric] = (), exploration=0.0):
         for metric in metrics: metric.set_driver_algorithm(self.driver_algorithm)
-        self.driver_algorithm.infer(episodes, metrics, exploration)
+        self.driver_algorithm.infer(initial_episode, episodes, metrics, exploration)
 
     # Saves the agent at a specified path
     def save(self, path=""):

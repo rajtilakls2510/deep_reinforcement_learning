@@ -5,6 +5,7 @@ tensorflow
 imageio
 imageio-ffmpeg
 opencv-python
+tqdm
 
 #GPU
 cudatoolkit

@@ -1,4 +1,4 @@
-import gym, os
+import gymnasium as gym, os
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Dense, Concatenate
 from tensorflow.keras.optimizers import Adam
@@ -7,10 +7,22 @@ from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepDPG
 from deep_rl.analytics import EpisodeLengthMetric, TotalRewardMetric, AverageQMetric, AbsoluteValueErrorMetric
 from mountaincarcont_env_wrappers import MountainCarContinuousEnvironment
+import tensorflow as tf
+import numpy as np
+
+# Set memory_growth option to True otherwise tensorflow will eat up all GPU memory
+try:
+    tf.config.experimental.set_memory_growth(tf.config.list_physical_devices('GPU')[0], True)
+except:
+    # Invalid device or cannot modify virtual devices once initialized.
+    pass
+
+tf.random.set_seed(tf.random.uniform(shape=(1,), minval=0, maxval=1000, dtype=tf.int32))
+np.random.seed(np.random.randint(0, 1000))
 
 # Wrapping the gym environment to interface with our library
 env = MountainCarContinuousEnvironment(gym.make("MountainCarContinuous-v0", render_mode = "rgb_array"))
-AGENT_PATH = "mountain_car_cont_agent"
+AGENT_PATH = "mountain_car_cont_agent2"
 
 # Actor Network
 state_input = Input(shape=(2,))
@@ -37,6 +49,9 @@ total_reward = TotalRewardMetric(os.path.join(AGENT_PATH, "train_metric"))
 avg_q = AverageQMetric(os.path.join(AGENT_PATH, "train_metric"))
 value_error = AbsoluteValueErrorMetric(os.path.join(AGENT_PATH, "train_metric"))
 
+total_reward_eval = TotalRewardMetric(os.path.join(AGENT_PATH, "eval_metric"))
+ep_length_eval = EpisodeLengthMetric(os.path.join(AGENT_PATH, "eval_metric"))
+
 # =============== Starting training from scratch ======================
 
 # Creating the algorithm that will be used to train the agent
@@ -53,15 +68,16 @@ driver_algorithm = DeepDPG(
 # Creating the Agent class
 agent = Agent(env, driver_algorithm)
 
-# Training for 100 episodes. Saving the agent every 10 episodes
-for i in range(10):
+# Training for 1000 episodes. Saving the agent every 10 episodes
+for i in range(500):
     print("Training Iteration:", i)
     agent.train(
-        initial_episode=10 * i,
-        episodes=10,
+        initial_episode=1 * i,
+        episodes=1,
         metrics=[ep_length, total_reward, avg_q, value_error],
         batch_size=64)
     agent.save(AGENT_PATH)
+    agent.evaluate(initial_episode=1 * i, episodes=1, metrics=[total_reward_eval, ep_length_eval], exploration=0.0)
 env.close()
 
 # ============================== Loading the agent and resuming training ================
@@ -71,18 +87,20 @@ env.close()
 #     exploration = 1,
 #     exploration_decay = 1,
 #     discount_factor=0.99,
-#     tau=0.001
+#     tau=0.001,
+#     step=268695
 # )
 #
 # agent = Agent(env, driver_algorithm)
 # agent.load(AGENT_PATH)
-# # Resuming training from 40th episode and training till 1_000th episode
-# for i in range(4, 1_00):
+# # Resuming training from 258th episode and training till 1_000th episode
+# for i in range(275, 500):
 #     print("Training Iteration: ", i)
 #     agent.train(
-#     initial_episode=10 * i,
-#     episodes=10,
+#     initial_episode=1 * i,
+#     episodes=1,
 #     metrics=[ep_length, total_reward, avg_q, value_error],
 #     batch_size=64)
 #     agent.save(AGENT_PATH)
+#     agent.evaluate(initial_episode=1 * i, episodes=1, metrics=[total_reward_eval, ep_length_eval], exploration=0.0)
 # env.close()

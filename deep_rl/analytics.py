@@ -66,7 +66,7 @@ class EpisodeLengthMetric(Metric):
     def __init__(self, path=""):
         super(EpisodeLengthMetric, self).__init__(path)
         self.name = "Episode Length"
-        self.episodic_data = {"episode": [], "length": []}
+        self.episodic_data = {"episode": [], "length": [], "step": []}
         self.length = 0
 
     def on_task_begin(self, data=None):
@@ -81,6 +81,7 @@ class EpisodeLengthMetric(Metric):
     def on_episode_end(self, data=None):
         self.episodic_data["episode"].append(data["episode"])
         self.episodic_data["length"].append(self.length)
+        self.episodic_data["step"].append(data["step"])
         self.save()
 
     def save(self):
@@ -100,7 +101,7 @@ class EpisodeLengthMetric(Metric):
         try:
             return pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
         except:
-            return {"episode": [], "length": []}
+            return {"episode": [], "length": [], "step": []}
 
 
 class TotalRewardMetric(Metric):
@@ -109,7 +110,7 @@ class TotalRewardMetric(Metric):
     def __init__(self, path=""):
         super(TotalRewardMetric, self).__init__(path)
         self.name = "Total Reward"
-        self.episodic_data = {"episode": [], "total_reward": []}
+        self.episodic_data = {"episode": [], "total_reward": [], "step": []}
         self.total_reward = 0
 
     def on_task_begin(self, data=None):
@@ -124,6 +125,7 @@ class TotalRewardMetric(Metric):
     def on_episode_end(self, data=None):
         self.episodic_data["episode"].append(data["episode"])
         self.episodic_data["total_reward"].append(self.total_reward)
+        self.episodic_data["step"].append(data["step"])
         self.save()
 
     def save(self):
@@ -143,7 +145,7 @@ class TotalRewardMetric(Metric):
         try:
             return pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
         except:
-            return {"episode": [], "total_reward": []}
+            return {"episode": [], "total_reward": [], "step": []}
 
 
 class AverageQMetric(Metric):
@@ -152,7 +154,7 @@ class AverageQMetric(Metric):
     def __init__(self, path=""):
         super(AverageQMetric, self).__init__(path)
         self.name = "Avg Q"
-        self.episodic_data = {"episode": [], "avg_q": []}
+        self.episodic_data = {"episode": [], "avg_q": [], "step": []}
         self.random_states = tf.constant([], dtype=tf.float32)
 
     def on_task_begin(self, data=None):
@@ -163,6 +165,7 @@ class AverageQMetric(Metric):
     def on_episode_end(self, data=None):
         self.episodic_data["episode"].append(data["episode"])
         self.episodic_data["avg_q"].append(tf.reduce_mean(self.driver_algorithm.get_values(self.random_states)).numpy())
+        self.episodic_data["step"].append(data["step"])
         self.save()
 
     def save(self):
@@ -185,7 +188,7 @@ class AverageQMetric(Metric):
         try:
             return pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
         except:
-            return {"episode": [], "avg_q": []}
+            return {"episode": [], "avg_q": [], "step": []}
 
 
 class ExplorationTrackerMetric(Metric):
@@ -194,7 +197,7 @@ class ExplorationTrackerMetric(Metric):
     def __init__(self, path=""):
         super(ExplorationTrackerMetric, self).__init__(path)
         self.name = "Exploration Tracker"
-        self.episodic_data = {"episode": [], "exploration": []}
+        self.episodic_data = {"episode": [], "exploration": [], "step": []}
 
     def on_task_begin(self, data=None):
         self.load()
@@ -202,6 +205,7 @@ class ExplorationTrackerMetric(Metric):
     def on_episode_end(self, data=None):
         self.episodic_data["episode"].append(data["episode"])
         self.episodic_data["exploration"].append(data["exploration"])
+        self.episodic_data["step"].append(data["step"])
         self.save()
 
     def save(self):
@@ -221,7 +225,7 @@ class ExplorationTrackerMetric(Metric):
         try:
             return pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
         except:
-            return {"episode": [], "exploration": []}
+            return {"episode": [], "exploration": [], "step": []}
 
 
 class AbsoluteValueErrorMetric(Metric):
@@ -230,7 +234,7 @@ class AbsoluteValueErrorMetric(Metric):
     def __init__(self, path=""):
         super(AbsoluteValueErrorMetric, self).__init__(path)
         self.name = "Absolute Value Error"
-        self.episodic_data = {"episode": [], "absolute error": []}
+        self.episodic_data = {"episode": [], "absolute error": [], "step": []}
         self.values = []
         self.rewards = []
 
@@ -253,6 +257,7 @@ class AbsoluteValueErrorMetric(Metric):
             total_error += abs(ret - value)
         self.episodic_data["episode"].append(data["episode"])
         self.episodic_data["absolute error"].append(total_error)
+        self.episodic_data["step"].append(data["step"])
         self.save()
 
     def save(self):
@@ -272,7 +277,7 @@ class AbsoluteValueErrorMetric(Metric):
         try:
             return pd.read_csv(os.path.join(self.path, self.name + ".csv")).to_dict('list')
         except:
-            return {"episode": [], "absolute error": []}
+            return {"episode": [], "absolute error": [], "step": []}
 
 
 class LiveEpisodeViewer(Metric):
@@ -343,12 +348,13 @@ class Plotter:
     # and call the show() method. This will bring up a matplotlib figure where you will be able to see graphs
     # for all the metrics that are being tracked.
 
-    def __init__(self, metrics: list[Metric], frequency=5000, smoothing=0.8):
+    def __init__(self, metrics: list[Metric], frequency=5000, smoothing=0.8, name="Figure1"):
         self.frequency = frequency
         self.metrics = metrics
         self.cols = 3
         self.rows = math.ceil(len(metrics) / self.cols)
         self.smoothingWeight = smoothing
+        self.name = name
 
         # Setting up plot styles
         SMALL_SIZE = 10
@@ -399,9 +405,14 @@ class Plotter:
 
         self.colors = [p['color'] for p in plt.rcParams['axes.prop_cycle']]
         self.colors = self.colors * (len(self.metrics) // len(self.colors) + 1)
-        self.fig, self.axes = plt.subplots(nrows=self.rows, ncols=self.cols)
-        for i in range(self.cols - len(self.metrics) % self.cols):
-            self.fig.delaxes(self.axes[-1][self.cols - i - 1])
+        self.fig, self.axes = plt.subplots(nrows=self.rows, ncols=self.cols, num=self.name)
+        if len(self.metrics) % self.cols > 0:
+            if self.rows>1:
+                for i in range(self.cols - len(self.metrics) % self.cols):
+                    self.fig.delaxes(self.axes[-1][self.cols - i - 1])
+            else:
+                for i in range(self.cols - len(self.metrics) % self.cols):
+                    self.fig.delaxes(self.axes[self.cols - i - 1])
         plt.subplots_adjust(left=0.05,
                             bottom=0.1,
                             right=0.95,
@@ -433,3 +444,29 @@ class Plotter:
     def show(self, block=True):
         anim = FuncAnimation(self.fig, self.plot, interval=self.frequency)
         plt.show(block=block)
+
+
+class TrainStepPlotter(Plotter):
+    def __init__(self, metrics: list[Metric], frequency=5000, smoothing=0.8, name="Figure1"):
+        super().__init__(metrics, frequency, smoothing, name)
+
+    def plot(self, f):
+        data = [metric.get_plot_data() for metric in self.metrics]
+
+        for ax, d, metric, color in zip(self.axes.flat, data, self.metrics, self.colors):
+            _, ylabel, xlabel = d.keys()
+            smoothed = []
+            try:
+                last = d[ylabel][0]
+                for smoothee in d[ylabel]:
+                    last = last * self.smoothingWeight + (1 - self.smoothingWeight) * smoothee
+                    smoothed.append(last)
+            except:
+                pass
+            ax.clear()
+            ax.plot(d[xlabel], d[ylabel], color=color, linewidth=0.5, alpha=0.25)  # Original Plot
+            ax.plot(d[xlabel], smoothed, color=color, linewidth=1)  # Smoothed Plot
+            ax.set_title(metric.name)
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+            ax.grid(visible=True, linewidth=0.05)

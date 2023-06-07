@@ -15,6 +15,7 @@ class DriverAlgorithm(ABC):
 
     def __init__(self):
         self.env = None
+        self.step_counter = 1
 
     def set_env(self, env):
         self.env = env
@@ -31,12 +32,12 @@ class DriverAlgorithm(ABC):
             False)  # Return: Action, Value for action, Action through exploration or not
 
     # Generated episodes and returns list frames for each episode
-    def infer(self, episodes=1, metrics: list[Metric] = (), exploration=0.0):
+    def infer(self,initial_episode, episodes, metrics: list[Metric] = (), exploration=0.0):
         for metric in metrics: metric.on_task_begin()
 
         # Evaluating for multiple episodes
-        for ep in range(episodes):
-            episode_data = {"episode": ep, "exploration": exploration}
+        for ep in range(initial_episode, initial_episode+episodes):
+            episode_data = {"episode": ep, "exploration": exploration, "step": self.step_counter}
             for metric in metrics: metric.on_episode_begin(episode_data)
 
             # Evaluation loop for an episode
@@ -58,12 +59,12 @@ class DriverAlgorithm(ABC):
                     "reward": reward,
                     "next_state": next_state.numpy(),
                     "explored": explored.numpy(),
-                    "frame": frame
+                    "frame": frame,
                 }
                 for metric in metrics: metric.on_episode_step(step_data)
-
+                # self.step_counter += 1
                 current_state = next_state
-            episode_data = {"episode": ep, "exploration": exploration}
+            episode_data = {"episode": ep, "exploration": exploration, "step": self.step_counter}
             for metric in metrics: metric.on_episode_end(episode_data)
         for metric in metrics: metric.on_task_end()
 
@@ -141,7 +142,7 @@ class DeepQLearning(DriverAlgorithm):
 
         # Training for multiple episodes
         for i in tqdm(range(initial_episode, initial_episode + episodes), desc="Episode"):
-            episode_data = {"episode": i, "exploration": self.exploration}
+            episode_data = {"episode": i, "exploration": self.exploration, "step": self.step_counter}
             for metric in metrics: metric.on_episode_begin(episode_data)
 
             # Training loop for an episode
@@ -173,7 +174,6 @@ class DeepQLearning(DriverAlgorithm):
                     "frame": frame
                 }
                 for metric in metrics: metric.on_episode_step(step_data)
-
                 # Learning from a batch of transitions
                 if self.step_counter % self.learn_after_steps == 0:
                     current_states, actions, rewards, next_states, terminals = self.replay_buffer.sample_batch_transitions(
@@ -188,7 +188,7 @@ class DeepQLearning(DriverAlgorithm):
                 if self.step_counter % self.update_target_after == 0:
                     self.target_network.set_weights(self.q_network.get_weights())
 
-            episode_data = {"episode": i, "exploration": self.exploration}
+            episode_data = {"episode": i, "exploration": self.exploration, "step": self.step_counter}
             for metric in metrics: metric.on_episode_end(episode_data)
 
             # Decaying Exploration Parameter
@@ -317,7 +317,7 @@ class DeepDPG(DriverAlgorithm):
 
         # Training for multiple episodes
         for i in tqdm(range(initial_episode, initial_episode + episodes), desc="Episode"):
-            episode_data = {"episode": i, "exploration": self.exploration}
+            episode_data = {"episode": i, "exploration": self.exploration, "step": self.step_counter}
             for metric in metrics: metric.on_episode_begin(episode_data)
 
             # Training loop for an episode
@@ -363,7 +363,7 @@ class DeepDPG(DriverAlgorithm):
                                             self.critic_network.trainable_weights, self.tau)
 
                 self.step_counter += 1
-            episode_data = {"episode": i, "exploration": self.exploration}
+            episode_data = {"episode": i, "exploration": self.exploration, "step": self.step_counter}
             for metric in metrics: metric.on_episode_end(episode_data)
 
             # Decaying Exploration Parameter
@@ -409,169 +409,3 @@ class DeepDPG(DriverAlgorithm):
                 self.critic_target_network = clone_model(self.critic_network)
         self.replay_buffer.load(os.path.join(path, "replay"))
 
-
-# class NeuralSarsa(DriverAlgorithm):
-#
-#     def __init__(self, q_network: tf.keras.Model = None, learning_rate=0.01, discount_factor=0.9, exploration=0.0,
-#                  exploration_decay=1.1, min_exploration=0.0, exploration_decay_after=100):
-#         super(NeuralSarsa, self).__init__()
-#         self.q_network = q_network
-#         self.learning_rate = learning_rate
-#         self.discount_factor = discount_factor
-#         self.exploration = exploration
-#         self.exploration_decay = exploration_decay
-#         self.exploration_decay_after = exploration_decay_after
-#         self.min_exploration = min_exploration
-#
-#     def train(self, initial_episode, episodes, metric, batch_size=None):
-#         metric.load()
-#         metric.on_task_begin()
-#         for i in tqdm(range(initial_episode, initial_episode + episodes), desc="Episode"):
-#
-#             metric.on_episode_begin()
-#
-#             self.env.reset()
-#             current_state, _, _ = self.env.observe()
-#             while not self.env.is_episode_finished():
-#                 action, action_value, explored = self.get_action(current_state, explore=self.exploration)
-#                 self.env.take_action(action)
-#                 next_state, reward, _ = self.env.observe()
-#                 next_action, next_value, _ = self.get_action(next_state, explore=self.exploration)
-#                 current_state_tensor = tf.constant([current_state])
-#                 with tf.GradientTape() as tape:
-#                     current_values = self.q_network(current_state_tensor)
-#
-#                 q_grads = tape.gradient(current_values, self.q_network.trainable_weights)
-#
-#                 if self.env.is_episode_finished():
-#                     delta = reward - current_values[0][action]
-#                 else:
-#                     delta = reward + self.discount_factor * next_value - current_values[0][action]
-#
-#                 for j in range(len(q_grads)):
-#                     self.q_network.trainable_weights[j].assign_add(self.learning_rate * delta * q_grads[j])
-#
-#                 current_state = next_state
-#
-#                 metric.on_episode_step(
-#                     {
-#                         "action_value": action_value,
-#                         "action": action,
-#                         "reward": reward,
-#                         "explored": explored
-#                     }
-#                 )
-#
-#             metric.on_episode_end({"episode": i, "exploration": self.exploration})
-#             if (i + 1) % self.exploration_decay_after == 0:
-#                 self.exploration /= self.exploration_decay
-#                 if self.exploration < self.min_exploration:
-#                     self.exploration = self.min_exploration
-#
-#             metric.save()
-#         metric.on_task_end()
-#
-#     def get_action(self, state, explore=0.0):
-#         action_ = self.q_network(tf.constant([state]))[0]
-#         action = tf.argmax(action_).numpy()
-#         explored = False
-#         if tf.random.uniform(shape=(), maxval=1) < explore:
-#             action = self.env.get_random_action()
-#             explored = True
-#         return action, action_[action].numpy(), explored  # Action, Value for Action, explored or not
-#
-#     def get_values(self, states):
-#         return tf.reduce_max(self.q_network(tf.constant(states)), axis=1)
-#
-#     def save(self, path=""):
-#         self.q_network.save(os.path.join(path, "q_network"))
-#
-#     def load(self, path=""):
-#         self.q_network = load_model(os.path.join(path, "q_network"))
-#
-#
-# class NeuralSarsaLambda(DriverAlgorithm):
-#
-#     def __init__(self, q_network: tf.keras.Model = None, learning_rate=0.01, discount_factor=0.9, lmbda=0.9,
-#                  exploration=0.0, exploration_decay=1.1, min_exploration=0.0, exploration_decay_after=100):
-#         super(NeuralSarsaLambda, self).__init__()
-#         self.q_network = q_network
-#         self.learning_rate = learning_rate
-#         self.discount_factor = discount_factor
-#         self.lmbda = lmbda
-#         self.exploration = exploration
-#         self.exploration_decay = exploration_decay
-#         self.exploration_decay_after = exploration_decay_after
-#         self.min_exploration = min_exploration
-#
-#     def train(self, initial_episode, episodes, metric, batch_size=None):
-#         metric.load()
-#         metric.on_task_begin()
-#         for i in tqdm(range(initial_episode, initial_episode + episodes), desc="Episode"):
-#
-#             metric.on_episode_begin()
-#
-#             el_trace = []
-#             for j in range(len(self.q_network.trainable_weights)):
-#                 el_trace.append(tf.zeros(self.q_network.trainable_weights[j].shape))
-#
-#             self.env.reset()
-#             current_state, _, _ = self.env.observe()
-#             while not self.env.is_episode_finished():
-#                 action, action_value, explored = self.get_action(current_state, explore=self.exploration)
-#                 self.env.take_action(action)
-#                 next_state, reward, _ = self.env.observe()
-#                 next_action, next_value, _ = self.get_action(next_state, explore=self.exploration)
-#                 current_state_tensor = tf.constant([current_state])
-#                 with tf.GradientTape() as tape:
-#                     current_values = self.q_network(current_state_tensor)
-#
-#                 q_grads = tape.gradient(current_values, self.q_network.trainable_weights)
-#
-#                 if self.env.is_episode_finished():
-#                     delta = reward - current_values[0][action]
-#                 else:
-#                     delta = reward + self.discount_factor * next_value - current_values[0][action]
-#
-#                 for j in range(len(q_grads)):
-#                     el_trace[j] = self.lmbda * self.discount_factor * el_trace[j] + q_grads[j]
-#                 for j in range(len(el_trace)):
-#                     self.q_network.trainable_weights[j].assign_add(self.learning_rate * delta * el_trace[j])
-#
-#                 current_state = next_state
-#
-#                 metric.on_episode_step(
-#                     {
-#                         "action_value": action_value,
-#                         "action": action,
-#                         "reward": reward,
-#                         "explored": explored
-#                     }
-#                 )
-#
-#             metric.on_episode_end({"episode": i, "exploration": self.exploration})
-#             if (i + 1) % self.exploration_decay_after == 0:
-#                 self.exploration /= self.exploration_decay
-#                 if self.exploration < self.min_exploration:
-#                     self.exploration = self.min_exploration
-#
-#             metric.save()
-#         metric.on_task_end()
-#
-#     def get_action(self, state, explore=0.0):
-#         action_ = self.q_network(tf.constant([state]))[0]
-#         action = tf.argmax(action_).numpy()
-#         explored = False
-#         if tf.random.uniform(shape=(), maxval=1) < explore:
-#             action = self.env.get_random_action()
-#             explored = True
-#         return action, action_[action].numpy(), explored  # Action, Value for Action, explored or not
-#
-#     def get_values(self, states):
-#         return tf.reduce_max(self.q_network(tf.constant(states)), axis=1)
-#
-#     def save(self, path=""):
-#         self.q_network.save(os.path.join(path, "q_network"))
-#
-#     def load(self, path=""):
-#         self.q_network = load_model(os.path.join(path, "q_network"))

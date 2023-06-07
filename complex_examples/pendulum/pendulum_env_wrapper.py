@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 from deep_rl.agent import GymEnvironment
 from tensorflow import random, float32
 import numpy as np

@@ -1,4 +1,4 @@
-import gym, os
+import gymnasium as gym, os
 from tensorflow.keras import Model, Input
 from tensorflow.keras.layers import Dense, Concatenate
 from tensorflow.keras.optimizers import Adam
@@ -8,10 +8,18 @@ from deep_rl.agent import Agent
 from deep_rl.algorithms import DeepDPG
 from deep_rl.analytics import EpisodeLengthMetric, TotalRewardMetric, AverageQMetric, AbsoluteValueErrorMetric
 from pendulum_env_wrapper import PendulumEnvironment
+import tensorflow as tf
+
+# Set memory_growth option to True otherwise tensorflow will eat up all GPU memory
+try:
+    tf.config.experimental.set_memory_growth(tf.config.list_physical_devices('GPU')[0], True)
+except:
+    # Invalid device or cannot modify virtual devices once initialized.
+    pass
 
 # Wrapping the gym environment to interface with our library
 env = PendulumEnvironment(gym.make("Pendulum-v1", render_mode="rgb_array"))
-AGENT_PATH = "pendulum_agent"
+AGENT_PATH = "pendulum_agent2"
 
 # Actor Network
 state_input = Input(shape=(3,))
