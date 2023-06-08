@@ -6,6 +6,7 @@ imageio
 imageio-ffmpeg
 opencv-python
 tqdm
+pettingzoo[mpe]
 
 #GPU
 cudatoolkit

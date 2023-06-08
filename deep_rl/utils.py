@@ -1,5 +1,16 @@
 import os, json
 from tensorflow.keras import Model, optimizers
+import tensorflow as tf
+
+@tf.function
+def set_weights(model, weights):
+    for var, weight in zip(model.trainable_weights, weights):
+        var.assign(weight)
+
+
+@tf.function
+def get_weights(model):
+    return [tf.convert_to_tensor(u) for u in model.trainable_weights]
 
 
 def save_keras_model(model, path):

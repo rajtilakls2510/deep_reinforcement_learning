@@ -25,7 +25,7 @@ class DRLEnvironment(ABC):
         return state
 
     # Returns: Random action
-    def get_random_action(self):
+    def get_random_action(self, **kwargs):
         pass
 
     # Takes an action
