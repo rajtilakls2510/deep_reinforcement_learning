@@ -290,7 +290,6 @@ class LiveEpisodeViewer(Metric):
         self.fps = fps
 
     def on_episode_begin(self, data=None):
-        print("Episode:", str(data["episode"] + 1))
         self.winname = "Episode: " + str(data["episode"] + 1)
         cv2.namedWindow(self.winname)
         cv2.moveWindow(self.winname, 50, 50)
@@ -424,7 +423,7 @@ class Plotter:
         data = [metric.get_plot_data() for metric in self.metrics]
 
         for ax, d, metric, color in zip(self.axes.flat, data, self.metrics, self.colors):
-            xlabel, ylabel = d.keys()
+            xlabel, ylabel, _ = d.keys()
             smoothed = []
             try:
                 last = d[ylabel][0]
