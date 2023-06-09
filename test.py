@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras import Model, layers, optimizers
 from pettingzoo.mpe import simple_adversary_v3
-from deep_rl.magent_parallel import MAParallelEnvironment, MADDPG
+from deep_rl.magent_parallel import MAParallelEnvironment, MADDPG, MATotalRewardMetric
 
 # Set memory_growth option to True otherwise tensorflow will eat up all GPU memory
 try:
@@ -54,12 +54,11 @@ out = layers.Dense(1)(x)
 critic_adversary_network = Model(inputs=(obs_inp, act_inp), outputs=out)
 critic_adversary_network.compile(optimizer=optimizers.Adam(learning_rate=0.001))
 
-print(critic_network.summary())
-print(critic_adversary_network.summary())
+total_reward = MATotalRewardMetric(path="agent")
 
 algorithm = MADDPG(env, env.agents, env.adversaries, actor_network, actor_adversary_network,
-                   critic_network, critic_adversary_network, replay_size=10000)
-algorithm.train(initial_episode=0, episodes=5, batch_size=16)
+                   critic_network, critic_adversary_network, replay_size=10000, exploration=0.5)
+algorithm.train(initial_episode=0, episodes=100, batch_size=16, metrics=[total_reward])
 
 
 
