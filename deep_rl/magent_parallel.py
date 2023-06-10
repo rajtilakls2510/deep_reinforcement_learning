@@ -481,7 +481,7 @@ class MADDPG(DriverAlgorithm):
             for metric in metrics: metric.on_episode_end(episode_data)
 
             if (i + 1) % self.exploration_decay_after == 0:
-                self.exploration = min(self.min_exploration, self.exploration/self.exploration_decay)
+                self.exploration = max(self.min_exploration, self.exploration/self.exploration_decay)
         for metric in metrics: metric.on_task_end()
 
     def get_action(self, observations, explore=0.0):
