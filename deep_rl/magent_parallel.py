@@ -1,3 +1,5 @@
+import gc
+
 from deep_rl.agent import DRLEnvironment
 from deep_rl.algorithms import DriverAlgorithm
 from deep_rl.analytics import Metric
@@ -40,7 +42,7 @@ class MAParallelEnvironment(DRLEnvironment):
         return self.rewards
 
     def get_random_action(self, agent):
-        return tf.random.normal(shape=(5,), mean=0.5, stddev=0.1)
+        return tf.random.normal(shape=(5,), mean=0.0, stddev=0.3)
 
     def is_episode_finished(self):
         return len(self.env.agents) == 0
@@ -51,260 +53,6 @@ class MAParallelEnvironment(DRLEnvironment):
     def reset(self):
         self.observations, _ = self.env.reset()
 
-
-# class MADDPG(DriverAlgorithm):
-#
-#     def __init__(self, env: MAParallelEnvironment, agents, adversaries, actor_network=None, actor_adversary_network=None, critic_network=None, critic_adversary_network=None, learn_after_steps=1,
-#                  replay_size=1000, exploration=0.1, min_exploration=0.0, exploration_decay=1.1,
-#                  exploration_decay_after=100, discount_factor=0.9, tau=0.001):
-#         super().__init__()
-#         self.env = env
-#         self.agents = agents
-#         self.adversaries = adversaries
-#
-#         if actor_network and critic_network:
-#             self.actor_networks = {agent: clone_model(actor_network) for agent in self.agents}
-#             self.actor_networks.update({agent: clone_model(actor_adversary_network) for agent in self.adversaries})
-#             for an in self.actor_networks.values():
-#                 an.compile(optimizer=Adam.from_config(actor_network.optimizer.get_config()))
-#             self.target_actor_networks = {agent: clone_model(actor_network) for agent in self.agents}
-#             self.target_actor_networks.update({agent: clone_model(actor_adversary_network) for agent in self.adversaries})
-#             self.critic_networks = {agent: clone_model(critic_network) for agent in self.agents}
-#             self.critic_networks.update({agent: clone_model(critic_adversary_network) for agent in self.adversaries})
-#             for cn in self.critic_networks.values():
-#                 cn.compile(optimizer=Adam.from_config(critic_network.optimizer.get_config()))
-#             self.target_critic_networks = {agent: clone_model(critic_network) for agent in self.agents}
-#             self.target_critic_networks.update({agent: clone_model(critic_adversary_network) for agent in self.adversaries})
-#             self.current_actor_network, self.current_critic_network = clone_model(actor_network), clone_model(critic_network)
-#             self.current_target_actor_network, self.current_target_critic_network = clone_model(actor_network), clone_model(critic_network)
-#             self.current_actor_adversary_network, self.current_critic_adversary_network = clone_model(actor_adversary_network), clone_model(
-#                 critic_adversary_network)
-#             self.current_target_actor_adversary_network, self.current_target_critic_adversary_network = clone_model(
-#                 actor_adversary_network), clone_model(critic_adversary_network)
-#         else:
-#             self.actor_networks = None
-#             self.target_actor_networks = None
-#             self.critic_networks = None
-#             self.target_critic_networks = None
-#             self.current_actor_network, self.current_critic_network = None, None
-#             self.current_target_actor_network, self.current_target_critic_network = None, None
-#             self.current_actor_adversary_network, self.current_critic_adversary_network = None, None
-#             self.current_target_actor_adversary_network, self.current_target_critic_adversary_network = None, None
-#
-#         self.learn_after_steps = learn_after_steps
-#         self.replay_buffer = MAExperienceReplay(agents=self.agents+self.adversaries, max_transitions=replay_size, continuous=True)
-#         self.discount_factor = tf.convert_to_tensor(discount_factor)
-#         self.exploration = exploration
-#         self.min_exploration = min_exploration
-#         self.exploration_decay = exploration_decay
-#         self.exploration_decay_after = exploration_decay_after
-#         self.tau = tf.convert_to_tensor(tau)
-#         self.step_counter = 1
-#         self.critic_loss = tf.keras.losses.MeanSquaredError()
-#
-#     @tf.function
-#     def _critic_agent_train_step(self, current_observations, actions, rewards, next_observations, next_actions):
-#         targets = tf.expand_dims(rewards, axis=1) + self.discount_factor * self.current_target_critic_network([next_observations, next_actions])
-#
-#         with tf.GradientTape() as tape:
-#             critic_value = self.current_critic_network([current_observations, actions])
-#             critic_loss = self.critic_loss(targets, critic_value)
-#
-#         critic_grads = tape.gradient(critic_loss, self.current_critic_network.trainable_variables)
-#         self.current_critic_network.optimizer.apply_gradients(zip(critic_grads, self.current_critic_network.trainable_variables))
-#
-#     @tf.function
-#     def _critic_adversary_train_step(self, current_observations, actions, rewards, next_observations, next_actions):
-#         targets = tf.expand_dims(rewards, axis=1) + self.discount_factor * self.current_target_critic_adversary_network(
-#             [next_observations, next_actions])
-#
-#         with tf.GradientTape() as tape:
-#             critic_value = self.current_critic_adversary_network([current_observations, actions])
-#             critic_loss = self.critic_loss(targets, critic_value)
-#
-#         critic_grads = tape.gradient(critic_loss, self.current_critic_adversary_network.trainable_variables)
-#         self.current_critic_adversary_network.optimizer.apply_gradients(
-#             zip(critic_grads, self.current_critic_adversary_network.trainable_variables))
-#
-#     @tf.function
-#     def _actor_agent_train_step(self, current_observations, actions, current_observation, agent):
-#         indices = tf.expand_dims(tf.range(current_observations.shape[0]), axis=1)
-#         filler = tf.fill(dims=(current_observations.shape[0], 1), value=agent)
-#         indices = tf.concat([indices, filler], axis=1)
-#         with tf.GradientTape() as tape:
-#             new_actions = tf.tensor_scatter_nd_update(actions, indices, self.current_actor_network(current_observation))
-#             actor_loss = -tf.reduce_mean(self.current_critic_network([current_observations, new_actions]))
-#         actor_grads = tape.gradient(actor_loss, self.current_actor_network.trainable_variables)
-#         self.current_actor_network.optimizer.apply_gradients(zip(actor_grads, self.current_actor_network.trainable_variables))
-#
-#     @tf.function
-#     def _actor_adversary_train_step(self, current_observations, actions, current_observation, agent):
-#         indices = tf.expand_dims(tf.range(current_observations.shape[0]), axis=1)
-#         filler = tf.fill(dims=(current_observations.shape[0], 1), value=agent)
-#         indices = tf.concat([indices, filler], axis=1)
-#         with tf.GradientTape() as tape:
-#             new_actions = tf.tensor_scatter_nd_update(actions, indices,
-#                                                       self.current_actor_adversary_network(current_observation))
-#             actor_loss = -tf.reduce_mean(self.current_critic_adversary_network([current_observations, new_actions]))
-#         actor_grads = tape.gradient(actor_loss, self.current_actor_adversary_network.trainable_variables)
-#         self.current_actor_adversary_network.optimizer.apply_gradients(
-#             zip(actor_grads, self.current_actor_adversary_network.trainable_variables))
-#
-#     @tf.function
-#     def update_targets(self, target_weights, weights, tau):
-#         for (target_w, w) in zip(target_weights, weights):
-#             target_w.assign(tau * w + (1 - tau) * target_w)
-#
-#     def train(self, initial_episode, episodes, metrics=(), batch_size=None):
-#         for metric in metrics: metric.on_task_begin()
-#
-#         for i in tqdm(range(initial_episode, initial_episode+episodes), desc="Episode"):
-#             episode_data = {"episode": i, "exploration": self.exploration, "step": self.step_counter}
-#             for metric in metrics: metric.on_episode_begin(episode_data)
-#
-#             self.env.reset()
-#             current_observations, _, _, _ = self.env.observe()
-#             while not self.env.is_episode_finished():
-#                 actions, action_values, explored = self.get_action(current_observations, self.exploration)
-#                 self.env.take_action(actions)
-#                 next_observations, rewards, terminated, frame = self.env.observe()
-#
-#                 self.replay_buffer.insert_transition([current_observations, actions, rewards, next_observations, terminated])
-#
-#                 current_observations = next_observations
-#
-#                 step_data = {
-#                     "current_obs": current_observations,
-#                     "action_value": action_values,
-#                     "action": actions,
-#                     "reward": rewards,
-#                     "next_obs": next_observations,
-#                     "explored": explored,
-#                     "frame": frame
-#                 }
-#                 for metric in metrics: metric.on_episode_step(step_data)
-#
-#                 if self.step_counter % self.learn_after_steps == 0:
-#                     current_observations_batch, actions_batch, rewards_batch, next_observations_batch, _ = self.replay_buffer.sample_batch_transitions(batch_size=batch_size)
-#
-#                     all_agent_current_observations = tf.stack([current_observations_batch[agent] for agent in self.agents], axis=1)
-#                     all_agent_actions = tf.stack([actions_batch[agent] for agent in self.agents], axis=1)
-#                     all_agent_next_observations = tf.stack([next_observations_batch[agent] for agent in self.agents], axis=1)
-#                     all_agent_next_actions = tf.stack([self.actor_networks[agent](current_observations_batch[agent]) for agent in self.agents], axis=1)
-#                     all_adversary_current_observations = tf.stack([current_observations_batch[agent] for agent in self.adversaries],
-#                                                               axis=1)
-#                     all_adversary_actions = tf.stack([actions_batch[agent] for agent in self.adversaries], axis=1)
-#                     all_adversary_next_observations = tf.stack([next_observations_batch[agent] for agent in self.adversaries], axis=1)
-#                     all_adversary_next_actions = tf.stack(
-#                         [self.actor_networks[agent](current_observations_batch[agent]) for agent in self.adversaries], axis=1)
-#
-#                     for agent_num, agent in enumerate(self.agents):
-#                         # Reusing a single graph for each agent
-#                         set_weights(self.current_actor_network, get_weights(self.actor_networks[agent]))
-#                         set_weights(self.current_critic_network, get_weights(self.critic_networks[agent]))
-#                         set_weights(self.current_target_actor_network, get_weights(self.target_actor_networks[agent]))
-#                         set_weights(self.current_target_critic_network, get_weights(self.target_critic_networks[agent]))
-#                         self.current_actor_network.optimizer = self.actor_networks[agent].optimizer
-#                         self.current_critic_network.optimizer = self.critic_networks[agent].optimizer
-#
-#                         if all_agent_current_observations.shape[0] >= batch_size:
-#                             self._critic_agent_train_step(all_agent_current_observations, all_agent_actions, rewards_batch[agent], all_agent_next_observations, all_agent_next_actions)
-#                             self._actor_agent_train_step(all_agent_current_observations, all_agent_actions, current_observations_batch[agent], tf.convert_to_tensor(agent_num))
-#                             set_weights(self.actor_networks[agent], get_weights(self.current_actor_network))
-#                             set_weights(self.critic_networks[agent], get_weights(self.current_critic_network))
-#                             set_weights(self.target_actor_networks[agent], get_weights(self.current_target_actor_network))
-#                             set_weights(self.target_critic_networks[agent], get_weights(self.current_target_critic_network))
-#                             self.update_targets(self.target_actor_networks[agent].trainable_variables, self.actor_networks[agent].trainable_variables, self.tau)
-#                             self.update_targets(self.target_critic_networks[agent].trainable_variables, self.critic_networks[agent].trainable_variables, self.tau)
-#                     for agent_num, agent in enumerate(self.adversaries):
-#                         # Reusing a single graph for each agent
-#                         set_weights(self.current_actor_adversary_network, get_weights(self.actor_networks[agent]))
-#                         set_weights(self.current_critic_adversary_network, get_weights(self.critic_networks[agent]))
-#                         set_weights(self.current_target_actor_adversary_network, get_weights(self.target_actor_networks[agent]))
-#                         set_weights(self.current_target_critic_adversary_network, get_weights(self.target_critic_networks[agent]))
-#                         self.current_actor_adversary_network.optimizer = self.actor_networks[agent].optimizer
-#                         self.current_critic_adversary_network.optimizer = self.critic_networks[agent].optimizer
-#
-#                         if all_adversary_current_observations.shape[0] >= batch_size:
-#                             self._critic_adversary_train_step(all_adversary_current_observations, all_adversary_actions, rewards_batch[agent],
-#                                                     all_adversary_next_observations, all_adversary_next_actions)
-#                             self._actor_adversary_train_step(all_adversary_current_observations, all_adversary_actions, current_observations_batch[agent], tf.convert_to_tensor(agent_num))
-#                             set_weights(self.actor_networks[agent], get_weights(self.current_actor_adversary_network))
-#                             set_weights(self.critic_networks[agent], get_weights(self.current_critic_adversary_network))
-#                             set_weights(self.target_actor_networks[agent],
-#                                         get_weights(self.current_target_actor_adversary_network))
-#                             set_weights(self.target_critic_networks[agent],
-#                                         get_weights(self.current_target_critic_adversary_network))
-#                             self.update_targets(self.target_actor_networks[agent].trainable_variables, self.actor_networks[agent].trainable_variables, self.tau)
-#                             self.update_targets(self.target_critic_networks[agent].trainable_variables, self.critic_networks[agent].trainable_variables,
-#                                                 self.tau)
-#
-#                 self.step_counter += 1
-#             episode_data = {"episode": i, "exploration": self.exploration, "step": self.step_counter}
-#             for metric in metrics: metric.on_episode_end(episode_data)
-#
-#             if (i + 1) % self.exploration_decay_after == 0:
-#                 self.exploration = min(self.min_exploration, self.exploration/self.exploration_decay)
-#         for metric in metrics: metric.on_task_end()
-#
-#     def get_action(self, observations, explore=0.0):
-#         actions = {}
-#         action_values = {}
-#         exploreds = {}
-#         agent_observations = tf.convert_to_tensor([[observations[agent] for agent in self.agents]])
-#         adversary_observations = tf.convert_to_tensor([[observations[agent] for agent in self.adversaries]])
-#         for agent, observation in observations.items():
-#             action = self.actor_networks[agent](tf.convert_to_tensor([observation], dtype=tf.float32))
-#             explored = tf.convert_to_tensor(False)
-#             if tf.random.uniform(shape=(), maxval=1) < explore:
-#                 action = action + tf.convert_to_tensor([self.env.get_random_action(agent)], tf.float32)
-#                 explored = tf.convert_to_tensor(True)
-#             actions[agent] = action[0]
-#             exploreds[agent] = explored
-#         agent_actions = tf.convert_to_tensor([[actions[agent] for agent in self.agents]])
-#         adversary_actions = tf.convert_to_tensor([[actions[agent] for agent in self.adversaries]])
-#         for agent in observations.keys():
-#             if agent in self.agents:
-#                 value = self.critic_networks[agent]([agent_observations, agent_actions])
-#             else:
-#                 value = self.critic_networks[agent]([adversary_observations, adversary_actions])
-#             action_values[agent] = value[0]
-#         return actions, action_values, exploreds
-#
-#     def infer(self, initial_episode, episodes, metrics: list[Metric] = (), exploration=0.0):
-#         for metric in metrics: metric.on_task_begin()
-#
-#         for ep in range(initial_episode, initial_episode+episodes):
-#             episode_data = {"episode": ep, "exploration": exploration, "step": self.step_counter}
-#             for metric in metrics: metric.on_episode_begin(episode_data)
-#
-#             self.env.reset()
-#             current_observations, rewards, terminated, frame = self.env.observe()
-#             while not self.env.is_episode_finished():
-#                 actions, action_values, explored = self.get_action(current_observations, exploration)
-#                 self.env.take_action(actions)
-#                 next_observations, rewards, terminated, frame = self.env.observe()
-#
-#                 step_data = {
-#                     "current_obs":current_observations,
-#                     "action_value": action_values,
-#                     "action": actions,
-#                     "reward": rewards,
-#                     "next_obs": next_observations,
-#                     "explored": explored,
-#                     "frame": frame
-#                 }
-#                 for metric in metrics: metric.on_episode_step(step_data)
-#                 current_observations = next_observations
-#             episode_data = {"episode_data": ep, "exploration": exploration, "step": self.step_counter}
-#             for metric in metrics: metric.on_episode_end(episode_data)
-#         for metric in metrics: metric.on_task_end()
-#
-#     def save(self, path=""):
-#         super().save(path)
-#
-#     def load(self, path=""):
-#         super().load(path)
 
 class MADDPG(DriverAlgorithm):
 
@@ -401,14 +149,19 @@ class MADDPG(DriverAlgorithm):
 
             self.env.reset()
             current_observations, _, _, _ = self.env.observe()
+            for agent in current_observations.keys(): current_observations[agent] = tf.convert_to_tensor(current_observations[agent], dtype=tf.float32)
             while not self.env.is_episode_finished():
                 actions, action_values, explored = self.get_action(current_observations, self.exploration)
                 self.env.take_action(actions)
                 next_observations, rewards, terminated, frame = self.env.observe()
 
-                self.replay_buffer.insert_transition([current_observations, actions, rewards, next_observations, terminated])
+                for agent in next_observations.keys(): next_observations[agent] = tf.convert_to_tensor(
+                    next_observations[agent], dtype=tf.float32)
+                for agent in rewards.keys(): rewards[agent] = tf.convert_to_tensor(
+                    np.float32(rewards[agent]), dtype=tf.float32)
+                for agent in terminated.keys(): terminated[agent] = tf.convert_to_tensor(terminated[agent], dtype=tf.bool)
 
-                current_observations = next_observations
+                self.replay_buffer.insert_transition([current_observations, actions, rewards, next_observations, terminated])
 
                 step_data = {
                     "current_obs": current_observations,
@@ -420,9 +173,11 @@ class MADDPG(DriverAlgorithm):
                     "frame": frame
                 }
                 for metric in metrics: metric.on_episode_step(step_data)
+                del current_observations, actions, action_values, rewards, terminated
+                current_observations = next_observations
 
                 if self.step_counter % self.learn_after_steps == 0:
-                    current_observations_batch, actions_batch, rewards_batch, next_observations_batch, _ = self.replay_buffer.sample_batch_transitions(batch_size=batch_size)
+                    current_observations_batch, actions_batch, rewards_batch, next_observations_batch, terminated_batch = self.replay_buffer.sample_batch_transitions(batch_size=batch_size)
 
                     all_agent_current_observations = tf.stack([current_observations_batch[agent] for agent in self.agents], axis=1)
                     all_agent_actions = tf.stack([actions_batch[agent] for agent in self.agents], axis=1)
@@ -437,46 +192,49 @@ class MADDPG(DriverAlgorithm):
 
                     for agent_num, agent in enumerate(self.agents):
                         # Reusing a single graph for each agent
-                        set_weights(self.current_actor_network, get_weights(self.actor_networks[agent]))
-                        set_weights(self.current_critic_network, get_weights(self.critic_networks[agent]))
-                        set_weights(self.current_target_actor_network, get_weights(self.target_actor_networks[agent]))
-                        set_weights(self.current_target_critic_network, get_weights(self.target_critic_networks[agent]))
+                        set_weights(self.current_actor_network.trainable_variables, get_weights(self.actor_networks[agent].trainable_variables))
+                        set_weights(self.current_critic_network.trainable_variables, get_weights(self.critic_networks[agent].trainable_variables))
+                        set_weights(self.current_target_actor_network.trainable_variables, get_weights(self.target_actor_networks[agent].trainable_variables))
+                        set_weights(self.current_target_critic_network.trainable_variables, get_weights(self.target_critic_networks[agent].trainable_variables))
                         self.current_actor_network.optimizer = self.actor_networks[agent].optimizer
                         self.current_critic_network.optimizer = self.critic_networks[agent].optimizer
 
                         if all_agent_current_observations.shape[0] >= batch_size:
                             self._critic_agent_train_step(all_agent_current_observations, all_agent_actions, all_adversary_current_observations, all_adversary_actions, rewards_batch[agent], all_agent_next_observations, all_agent_next_actions, all_adversary_next_observations, all_adversary_next_actions)
-                            self._actor_agent_train_step(all_agent_current_observations, all_agent_actions, all_adversary_current_observations, all_adversary_actions, current_observations_batch[agent], tf.convert_to_tensor(agent_num))
-                            set_weights(self.actor_networks[agent], get_weights(self.current_actor_network))
-                            set_weights(self.critic_networks[agent], get_weights(self.current_critic_network))
-                            set_weights(self.target_actor_networks[agent], get_weights(self.current_target_actor_network))
-                            set_weights(self.target_critic_networks[agent], get_weights(self.current_target_critic_network))
+                            self._actor_agent_train_step(all_agent_current_observations, all_agent_actions, all_adversary_current_observations, all_adversary_actions, current_observations_batch[agent], tf.convert_to_tensor(np.int32(agent_num), dtype=tf.int32))
+                            set_weights(self.actor_networks[agent].trainable_variables, get_weights(self.current_actor_network.trainable_variables))
+                            set_weights(self.critic_networks[agent].trainable_variables, get_weights(self.current_critic_network.trainable_variables))
+                            set_weights(self.target_actor_networks[agent].trainable_variables, get_weights(self.current_target_actor_network.trainable_variables))
+                            set_weights(self.target_critic_networks[agent].trainable_variables, get_weights(self.current_target_critic_network.trainable_variables))
                             self.update_targets(self.target_actor_networks[agent].trainable_variables, self.actor_networks[agent].trainable_variables, self.tau)
                             self.update_targets(self.target_critic_networks[agent].trainable_variables, self.critic_networks[agent].trainable_variables, self.tau)
                     for agent_num, agent in enumerate(self.adversaries):
                         # Reusing a single graph for each agent
-                        set_weights(self.current_actor_adversary_network, get_weights(self.actor_networks[agent]))
-                        set_weights(self.current_critic_network, get_weights(self.critic_networks[agent]))
-                        set_weights(self.current_target_actor_adversary_network, get_weights(self.target_actor_networks[agent]))
-                        set_weights(self.current_target_critic_network, get_weights(self.target_critic_networks[agent]))
+                        set_weights(self.current_actor_adversary_network.trainable_variables, get_weights(self.actor_networks[agent].trainable_variables))
+                        set_weights(self.current_critic_network.trainable_variables, get_weights(self.critic_networks[agent].trainable_variables))
+                        set_weights(self.current_target_actor_adversary_network.trainable_variables, get_weights(self.target_actor_networks[agent].trainable_variables))
+                        set_weights(self.current_target_critic_network.trainable_variables, get_weights(self.target_critic_networks[agent].trainable_variables))
                         self.current_actor_adversary_network.optimizer = self.actor_networks[agent].optimizer
                         self.current_critic_network.optimizer = self.critic_networks[agent].optimizer
 
                         if all_adversary_current_observations.shape[0] >= batch_size:
                             self._critic_agent_train_step(all_agent_current_observations, all_agent_actions, all_adversary_current_observations, all_adversary_actions, rewards_batch[agent],
                                                     all_agent_next_observations, all_agent_actions, all_adversary_next_observations, all_adversary_next_actions)
-                            self._actor_adversary_train_step(all_agent_current_observations, all_agent_actions, all_adversary_current_observations, all_adversary_actions, current_observations_batch[agent], tf.convert_to_tensor(agent_num))
-                            set_weights(self.actor_networks[agent], get_weights(self.current_actor_adversary_network))
-                            set_weights(self.critic_networks[agent], get_weights(self.current_critic_network))
-                            set_weights(self.target_actor_networks[agent],
-                                        get_weights(self.current_target_actor_adversary_network))
-                            set_weights(self.target_critic_networks[agent],
-                                        get_weights(self.current_target_critic_network))
+                            self._actor_adversary_train_step(all_agent_current_observations, all_agent_actions, all_adversary_current_observations, all_adversary_actions, current_observations_batch[agent], tf.convert_to_tensor(np.int32(agent_num), dtype=tf.int32))
+                            set_weights(self.actor_networks[agent].trainable_variables, get_weights(self.current_actor_adversary_network.trainable_variables))
+                            set_weights(self.critic_networks[agent].trainable_variables, get_weights(self.current_critic_network.trainable_variables))
+                            set_weights(self.target_actor_networks[agent].trainable_variables,
+                                        get_weights(self.current_target_actor_adversary_network.trainable_variables))
+                            set_weights(self.target_critic_networks[agent].trainable_variables,
+                                        get_weights(self.current_target_critic_network.trainable_variables))
                             self.update_targets(self.target_actor_networks[agent].trainable_variables, self.actor_networks[agent].trainable_variables, self.tau)
                             self.update_targets(self.target_critic_networks[agent].trainable_variables, self.critic_networks[agent].trainable_variables,
                                                 self.tau)
-
+                    del all_agent_current_observations, all_agent_actions, all_agent_next_observations, all_agent_next_actions
+                    del all_adversary_current_observations, all_adversary_actions, all_adversary_next_observations, all_adversary_next_actions
+                    del current_observations_batch, actions_batch, next_observations, rewards_batch, terminated_batch
                 self.step_counter += 1
+            gc.collect()
             episode_data = {"episode": i, "exploration": self.exploration, "step": self.step_counter}
             for metric in metrics: metric.on_episode_end(episode_data)
 
@@ -493,7 +251,7 @@ class MADDPG(DriverAlgorithm):
         for agent, observation in observations.items():
             action = self.actor_networks[agent](tf.convert_to_tensor([observation], dtype=tf.float32))
             explored = tf.convert_to_tensor(False)
-            if tf.random.uniform(shape=(), maxval=1) < explore:
+            if np.random.uniform() < explore:
                 action = action + tf.convert_to_tensor([self.env.get_random_action(agent)], tf.float32)
                 explored = tf.convert_to_tensor(True)
             actions[agent] = action[0]
@@ -675,7 +433,7 @@ class MATotalRewardMetric(Metric):
         self.total_reward = 0
 
     def on_episode_step(self, data=None):
-        self.total_reward += np.mean([data["reward"][agent] for agent in data["reward"].keys()])
+        self.total_reward += np.mean([data["reward"][agent] for agent in data["reward"].keys() if "agent" in agent])
 
     def on_episode_end(self, data=None):
         self.episodic_data["episode"].append(data["episode"])
