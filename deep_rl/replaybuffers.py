@@ -1,5 +1,6 @@
 import tensorflow as tf
 import os
+import numpy as np
 
 
 class ReplayBuffer:
@@ -21,6 +22,9 @@ class ReplayBuffer:
 
     # Loads the buffer
     def load(self, path=""):
+        pass
+
+    def size(self):
         pass
 
 
@@ -51,6 +55,9 @@ class ExperienceReplay(ReplayBuffer):
     def insert_transition(self, transition):
         self._insert_transition_at(transition, self.current_index % self.max_transitions)
         self.current_index += 1
+
+    def size(self):
+        return self.current_states.size()
 
     def sample_batch_transitions(self, batch_size=16):
         buf_len = self.current_states.size()

@@ -4,7 +4,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 from deep_rl.analytics import Plotter, EpisodeLengthMetric, TotalRewardMetric, AverageQMetric, AbsoluteValueErrorMetric,TrainStepPlotter
 # =================== Plotting the live metrics of an Agent ==================
 
-AGENT_PATH = "mountain_car_cont_agent"
+AGENT_PATH = "hopper_agent"
 
 # Setting up metric to live track
 ep_length_train = EpisodeLengthMetric(os.path.join(AGENT_PATH, "train_metric"))
@@ -15,5 +15,5 @@ total_reward = TotalRewardMetric(os.path.join(AGENT_PATH, "eval_metric"))
 # value_error = AbsoluteValueErrorMetric(os.path.join(AGENT_PATH, "train_metric"))
 
 # Class to plot the metrics as live graphs
-plotter = TrainStepPlotter(metrics = [ep_length_train, total_reward_train, total_reward, ep_length], name="D2PG1.0")
+plotter = TrainStepPlotter(metrics = [ep_length_train, total_reward_train, total_reward, ep_length], name="TD3")
 plotter.show()

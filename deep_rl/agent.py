@@ -1,5 +1,6 @@
 from deep_rl.analytics import Metric
 from abc import ABC, abstractmethod
+import numpy as np
 
 
 class DRLEnvironment(ABC):
@@ -64,8 +65,10 @@ class GymEnvironment(DRLEnvironment):
         self.state, _ = self.env.reset()
 
     # Returns the current state from observation, reward, frame
-    def observe(self):
-        frame = self.env.render()
+    def observe(self, rendering=False):
+        frame = None
+        if rendering:
+            frame = self.env.render()
         self.preprocessed_state = self.preprocess_state(self.state)
         self.reward = self.calculate_reward()
         return self.preprocessed_state, self.reward, frame
@@ -73,6 +76,8 @@ class GymEnvironment(DRLEnvironment):
     # Takes an action
     def take_action(self, action):
         self.state, self.reward, self.terminated, self.truncated, _ = self.env.step(action)
+        self.state = np.float32(self.state)
+        self.reward = np.float32(self.reward)
 
     # Defaults to returning gym reward
     def calculate_reward(self, **kwargs):
@@ -109,9 +114,9 @@ class Agent:
         self.driver_algorithm.train(initial_episode, episodes, metrics, **kwargs)
 
     # Evaluates the agent for given episodes. Takes some metrics that track the progress of evaluation
-    def evaluate(self, initial_episode, episodes, metrics: list[Metric] = (), exploration=0.0):
+    def evaluate(self, initial_episode, episodes, metrics: list[Metric] = (), exploration=0.0, **kwargs):
         for metric in metrics: metric.set_driver_algorithm(self.driver_algorithm)
-        self.driver_algorithm.infer(initial_episode, episodes, metrics, exploration)
+        self.driver_algorithm.infer(initial_episode, episodes, metrics, exploration, kwargs)
 
     # Saves the agent at a specified path
     def save(self, path=""):
